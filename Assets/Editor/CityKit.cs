@@ -75,11 +75,19 @@ namespace NullFrontier.EditorTools
 
             _roadMat = ArtAssets.GetKitMaterial(Roads, "CityKitRoads");
             _kitMat = ArtAssets.GetKitMaterial(Industrial, "CityKitIndustrial");
+            // The shared tint is authored for the night menu. Under daylight the road
+            // atlas rendered as pale pavement and the blocks as pastel card; these two
+            // city-only copies go a stop darker so the lane paint, the kerbs and the
+            // shadows have a value to read against.
+            Tint(_roadMat, new Color(0.33f, 0.36f, 0.42f));
+            Tint(_kitMat, new Color(0.44f, 0.47f, 0.54f));
             // Both were tuned for a night street, where a sunlit road is the brightest
             // thing in frame anyway. Under the day sun these values kept the ground at
             // near-black and swallowed anything dropped on it.
-            _asphaltMat = ArtAssets.GetSolidMaterial("Asphalt", new Color(0.26f, 0.28f, 0.33f), 0.35f);
-            _concreteMat = ArtAssets.GetSolidMaterial("Concrete", new Color(0.55f, 0.57f, 0.62f), 0.2f);
+            // Under the 1.6 sun a 0.26 asphalt rendered as white pavement; real asphalt
+            // reads dark even at noon, and it is the value that grounds every other prop.
+            _asphaltMat = ArtAssets.GetSolidMaterial("Asphalt", new Color(0.14f, 0.15f, 0.18f), 0.42f);
+            _concreteMat = ArtAssets.GetSolidMaterial("Concrete", new Color(0.40f, 0.42f, 0.47f), 0.25f);
 
             if (!CalibrateRoadModule()) return false;
 
@@ -129,6 +137,15 @@ namespace NullFrontier.EditorTools
             {
                 Object.DestroyImmediate(instance);
             }
+        }
+
+        /// <summary>Restyle one city-only kit material copy and keep the asset in sync.</summary>
+        private static void Tint(Material material, Color color)
+        {
+            if (material == null) return;
+            material.color = color;
+            if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", color);
+            UnityEditor.EditorUtility.SetDirty(material);
         }
 
         // ------------------------------------------------------------------- layout
@@ -205,9 +222,13 @@ namespace NullFrontier.EditorTools
                     float z = -half + (j + 0.5f) * BlockPitch;
 
                     // Leave a plaza near spawn so the player is not walled in on load.
+                    // Cover is deliberately excluded: a shipping container in the first
+                    // cell filled the whole opening frame at eye level. Small site props
+                    // keep the plaza from reading as an empty car park.
                     if (Mathf.Abs(x) < BlockPitch * 0.75f && Mathf.Abs(z) < BlockPitch * 0.75f)
                     {
-                        PlaceCover(cover, new Vector3(x, 0f, z), rng);
+                        if (rng.NextDouble() < 0.5)
+                            PlaceDetail(props, new Vector3(x, 0f, z), rng);
                         continue;
                     }
 
@@ -235,6 +256,7 @@ namespace NullFrontier.EditorTools
                     if (go == null) continue;
 
                     AddRooftopDetails(signage, go, NeonColors[rng.Next(NeonColors.Length)], rng);
+                    AddFacadePanel(signage, go, rng);
                     if (rng.NextDouble() < 0.55)
                         PlaceCover(cover, new Vector3(x + cellRoom * 0.6f, 0f, z), rng);
                 }
@@ -287,6 +309,114 @@ namespace NullFrontier.EditorTools
             roofItem.transform.localScale = Vector3.one * (radius * 0.6f / Mathf.Max(native.x, native.z));
             roofItem.transform.position = new Vector3(b.center.x, b.max.y, b.center.z);
             SetLayerRecursive(roofItem, _artLayer);
+        }
+
+        /// <summary>
+        /// A window grid and, on some blocks, a holo screen on one facade. The kit models
+        /// are flat-shaded painted boxes; the additive panel supplies the office windows
+        /// that make a block read as a tower rather than a painted crate, at one draw call
+        /// each and no change to the collider.
+        /// </summary>
+        private static void AddFacadePanel(Transform root, GameObject building,
+            System.Random rng)
+        {
+            // Compound kit models are a tower plus low wings; the combined bounds are
+            // much larger than any single wall, so panels measured from them floated off
+            // the facade. The largest-volume renderer is the main mass the windows belong
+            // on.
+            Bounds b = MainMassBounds(building);
+            var windowMaterial =
+                ArtAssets.GetWindowMaterial("CityFacade", new Color(0.24f, 0.55f, 1f), 0.4f);
+            // The lit-window shader is additive, so on its own it left the wall as a flat
+            // painted panel with faint stripes. A dark, smooth glazing sheet underneath
+            // gives the facade a readable glass plane by day and a base for the lit cells
+            // to sit on at night.
+            var glassMaterial = ArtAssets.GetSolidMaterial("CityGlass",
+                new Color(0.07f, 0.09f, 0.13f), 0.9f);
+            float y = b.center.y;
+            float height = b.size.y * 0.72f;
+
+            // One panel on one random side left every other approach to a block a blank
+            // painted wall - the opening shot looked at exactly such a face. Wrapping all
+            // four sides makes the district read as offices from any heading.
+            AddWindowQuad(root, new Vector3(b.max.x + 0.04f, y, b.center.z),
+                -90f, b.size.z * 0.80f, height, Vector3.right, glassMaterial, windowMaterial);
+            AddWindowQuad(root, new Vector3(b.min.x - 0.04f, y, b.center.z),
+                90f, b.size.z * 0.80f, height, Vector3.left, glassMaterial, windowMaterial);
+            AddWindowQuad(root, new Vector3(b.center.x, y, b.max.z + 0.04f),
+                180f, b.size.x * 0.80f, height, Vector3.forward, glassMaterial, windowMaterial);
+            AddWindowQuad(root, new Vector3(b.center.x, y, b.min.z - 0.04f),
+                0f, b.size.x * 0.80f, height, Vector3.back, glassMaterial, windowMaterial);
+
+            if (rng.NextDouble() > 0.2) return;
+
+            bool alongX = rng.Next(2) == 0;
+            float x = alongX
+                ? (rng.Next(2) == 0 ? b.max.x + 0.25f : b.min.x - 0.25f)
+                : b.center.x;
+            float z = alongX
+                ? b.center.z
+                : (rng.Next(2) == 0 ? b.max.z + 0.25f : b.min.z - 0.25f);
+            float yaw = alongX ? (x > b.center.x ? -90f : 90f) : (z > b.center.z ? 180f : 0f);
+
+            Color holo = NeonColors[rng.Next(NeonColors.Length)];
+            var panel = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            panel.name = "HoloSign";
+            panel.transform.SetParent(root, false);
+            panel.transform.position = new Vector3(x, b.center.y + b.size.y * 0.18f, z);
+            panel.transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+            panel.transform.localScale = new Vector3(4.4f, 7.6f, 1f);
+            var renderer = panel.GetComponent<MeshRenderer>();
+            renderer.sharedMaterial =
+                ArtAssets.GetHoloMaterial("CitySign", holo, 0.9f);
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            panel.layer = _artLayer;
+            Object.DestroyImmediate(panel.GetComponent<Collider>());
+        }
+
+        /// <summary>The renderer with the most volume: the block's main mass, not its wings.</summary>
+        private static Bounds MainMassBounds(GameObject building)
+        {
+            Bounds best = ArtAssets.CombinedBounds(building);
+            float bestVolume = 0f;
+            foreach (var renderer in building.GetComponentsInChildren<Renderer>())
+            {
+                if (!renderer.enabled) continue;
+                Bounds bounds = renderer.bounds;
+                float volume = bounds.size.x * bounds.size.y * bounds.size.z;
+                if (volume <= bestVolume) continue;
+                bestVolume = volume;
+                best = bounds;
+            }
+            return best;
+        }
+
+        /// <summary>Glazing plus lit windows on one wall; yaw makes the quad face outward.</summary>
+        private static void AddWindowQuad(Transform root, Vector3 position, float yaw,
+            float width, float height, Vector3 outward, Material glass, Material windows)
+        {
+            AddFacadeQuad(root, "FacadeGlass", position, yaw, width, height, glass);
+            // 2 cm proud of the glazing: coplanar quads would z-fight into a flicker.
+            AddFacadeQuad(root, "FacadeWindows", position + outward * 0.02f,
+                yaw, width, height, windows);
+        }
+
+        private static void AddFacadeQuad(Transform root, string name, Vector3 position,
+            float yaw, float width, float height, Material material)
+        {
+            var quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            quad.name = name;
+            quad.transform.SetParent(root, false);
+            quad.transform.position = position;
+            quad.transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+            quad.transform.localScale = new Vector3(width, height, 1f);
+            var renderer = quad.GetComponent<MeshRenderer>();
+            renderer.sharedMaterial = material;
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            quad.layer = _artLayer;
+            Object.DestroyImmediate(quad.GetComponent<Collider>());
         }
 
         // -------------------------------------------------------------- set dressing

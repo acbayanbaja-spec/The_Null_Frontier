@@ -83,6 +83,9 @@ namespace NullFrontier.Player
                 return;
             }
 
+            // Play-mode teardown destroys the provider pair mid-frame; a guard here keeps
+            // the one remaining LateUpdate from flooding the console with null references.
+            if (_input == null) return;
             _input.Reset();
             _provider?.Poll(_input);
 

@@ -182,7 +182,11 @@ namespace NullFrontier.EditorTools
                 }
 
                 string path = $"{PortraitDir}/{name}.png";
-                File.WriteAllBytes(path, pixels.EncodeToPNG());
+                if (!TryWritePortrait(path, pixels.EncodeToPNG()))
+                {
+                    Object.DestroyImmediate(pixels);
+                    return false;
+                }
                 Object.DestroyImmediate(pixels);
 
                 ImportAsSprite(path);
@@ -206,6 +210,46 @@ namespace NullFrontier.EditorTools
             animator.applyRootMotion = false;
             animator.Play(IdleState, 0, 0.22f);
             animator.Update(0f);
+        }
+
+        /// <summary>
+        /// Overwrites a portrait without tripping over the importer's memory mapping.
+        /// Windows refuses to write a file whose bytes are still mapped (error 1224), so
+        /// the bytes land in a sibling temp file first and, if the copy fails, the stale
+        /// asset is dropped before one retry. A failure keeps the previous portrait.
+        /// </summary>
+        private static bool TryWritePortrait(string path, byte[] png)
+        {
+            string temporary = path + ".tmp";
+            File.WriteAllBytes(temporary, png);
+
+            string error;
+            bool written = TryCopy(temporary, path, out error);
+            if (!written)
+            {
+                AssetDatabase.DeleteAsset(path);
+                written = TryCopy(temporary, path, out error);
+            }
+
+            File.Delete(temporary);
+            if (!written)
+                Debug.LogWarning($"[NullFrontier] Could not write portrait {path}: {error}");
+            return written;
+        }
+
+        private static bool TryCopy(string from, string to, out string error)
+        {
+            try
+            {
+                File.Copy(from, to, true);
+                error = null;
+                return true;
+            }
+            catch (IOException e)
+            {
+                error = e.Message;
+                return false;
+            }
         }
 
         private static void ImportAsSprite(string path)

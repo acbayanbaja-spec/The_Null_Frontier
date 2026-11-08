@@ -31,6 +31,27 @@ does not repeat marketing language. Anything not listed under "Verified" is unve
 | Any Android build | **Not** tested on a device | Existing `Builds/*.apk` are older debug builds |
 | Multiplayer networking | **Does not exist** | See C2 |
 
+### 1.1 Later verification pass (2026-11-08, editor Play)
+
+An instrumented editor driver rebuilt both scenes, played them in sequence, captured the
+real Game view, and logged scene state each run. The surviving captures are committed
+under `Docs/Captures/`:
+
+- `main_menu_2026-11-08.png` — menu Game view with full UI.
+- `vertical_city_2026-11-08.png` — city Game view with HUD and framed player.
+
+| Item | Result |
+|---|---|
+| `SceneBuilder.BuildAll()` | Returns success; both scenes save |
+| Menu Play | 12 buttons present, active, interactable; 10 with persistent listeners, Continue/Co-op wired at runtime |
+| Menu capture | Full UI over the live night stage; portrait, JAHred Lv. 3, six menu entries, logo, planet |
+| City Play | Real HUD values (JAHred Lv. 3, mission "Missing Players", 32/32 ammo, 6 hostiles), enemy visible, player casts a shadow |
+| Player placement | Visual feet at world Y≈0.31 on a Y=0 floor; body bounds centred at Y≈1.14 |
+| Third-person camera | Rotation composer added; lens now pitches and frames the whole operative |
+| Console during Play | No errors or exceptions after the teardown null-reference guards |
+| C# compile | Offline Roslyn gate clean (`Assembly-CSharp`, `Assembly-CSharp-Editor`) |
+| Android device | **Still not tested** — no APK install, no frame-time data |
+
 ---
 
 ## 2. Architecture map
@@ -274,10 +295,14 @@ it that way; the server key belongs only in the host's environment.
 - The main-menu capture is 1380×610 (≈2.26:1). Phone aspect ratios and notches have not
   been tested.
 
-**Honest visual assessment:** the current menu reads as a stylised low-poly sci-fi
-scene. It is not photoreal and cannot become photoreal with these assets. Reaching the
-"AAA realistic" target requires realistic licensed assets (characters, city, station),
-art direction, and device profiling — see the roadmap's external requirements.
+**Honest visual assessment:** the menu now has a readable composition (player card,
+six menu entries, animated portal + textured Earth, neon avenue) and the city has
+four-sided glass facades with lit office windows, a re-graded daylight key and a
+grounded, framed player. It is still a **stylised low-poly scene**, not photoreal. The
+operative is the Quaternius humanoid with a procedural gear kit, not a realistic human;
+the kit buildings are box masses. Reaching the "AAA realistic" target requires realistic
+licensed assets (characters, city, station), art direction, and device profiling — see
+the roadmap's external requirements. Any paid asset requires approval first.
 
 ---
 
@@ -313,7 +338,7 @@ Per the project rules, no paid service or asset will be introduced without appro
 |---|---|---|---|---|
 | Main menu stage | Yes | Yes (editor Play) | Manual only | Low-poly art; no device |
 | Menu UI | Yes | Yes | Manual only | Wide aspect only |
-| Movement/combat | Yes | Not re-verified this session | No | Reload bug H3 |
+| Movement/combat | Yes | Camera + visual verified in Play | No | No scripted input test; reload bug H3 |
 | Enemy AI | Yes | Not re-verified | No | — |
 | Missions | Yes | Not re-verified | No | 9 definitions |
 | Maze | Yes | Unreachable from menu flow | No | — |

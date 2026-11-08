@@ -20,7 +20,9 @@ namespace NullFrontier.Player
         }
 
         private void OnEnable() => Actions.Enable();
-        private void OnDisable() => Actions.Disable();
+        // Destroy order at play-mode exit can run OnDisable before Awake has built the
+        // action map; without the guard every teardown logged a null-reference.
+        private void OnDisable() => Actions?.Disable();
 
         public void Poll(PlayerInputState state)
         {

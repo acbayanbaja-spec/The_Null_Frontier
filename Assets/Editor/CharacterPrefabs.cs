@@ -87,6 +87,7 @@ namespace NullFrontier.EditorTools
             ArtAssets.FitToHeight(visual, CharacterVisualHeight);
             visual.transform.localPosition = Vector3.zero;
             ArtAssets.BakeCharacterMaterials(visual, modelName, accent);
+            TacticalGear.Attach(visual, accent);
 
             var animator = visual.GetComponentInChildren<Animator>();
             if (animator != null)
@@ -208,6 +209,18 @@ namespace NullFrontier.EditorTools
 
                 var scanRenderer = visual.GetComponentInChildren<Renderer>(true);
                 if (scanRenderer != null) SetField(ai, "scanIndicator", scanRenderer);
+
+                // Soldiers wear the same kit as the roster; the commander's is red. The
+                // mutant and the drone stay bare so the silhouette still separates them.
+                // Attached after the scan indicator is chosen, so a chest plate never
+                // becomes the renderer that flashes when the unit is scanned.
+                if (modelName == "BlueSoldier_Male" || modelName == "Soldier_Male")
+                {
+                    Color gear = tuning.TypeId == "security_commander"
+                        ? new Color(1f, 0.18f, 0.15f)
+                        : new Color(1f, 0.32f, 0.24f);
+                    TacticalGear.Attach(visual, gear, root.layer);
+                }
             }
             else
             {

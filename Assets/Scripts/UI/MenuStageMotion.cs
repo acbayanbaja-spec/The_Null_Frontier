@@ -28,12 +28,17 @@ namespace NullFrontier.UI
         [Header("Planet")]
         [SerializeField] private Transform earth;
         [SerializeField] private Transform clouds;
+        [SerializeField] private Transform cirrus;
         [SerializeField] private float earthDegreesPerSecond = 2.6f;
         [SerializeField] private float cloudDegreesPerSecond = 3.8f;
+        [SerializeField] private float cirrusDegreesPerSecond = 5.1f;
 
         [Header("Portal")]
         [SerializeField] private Transform[] portalArcs;
         [SerializeField] private float arcDegreesPerSecond = 9f;
+        [SerializeField] private Light[] gateLights;
+        [SerializeField] private float gateLightPulse = 0.16f;
+        [SerializeField] private float gateLightSeconds = 3.1f;
 
         private static readonly int EmissionId = Shader.PropertyToID("_EmissionColor");
         private static readonly int BaseId = Shader.PropertyToID("_BaseColor");
@@ -43,6 +48,7 @@ namespace NullFrontier.UI
         private Color[] _glowBase;
         private float[] _phase;
         private float[] _arcStart;
+        private float[] _gateLightBase;
 
         private void Awake()
         {
@@ -50,6 +56,20 @@ namespace NullFrontier.UI
             BuildEmitters();
             BuildGlows();
             BuildArcs();
+            BuildGateLightBases();
+        }
+
+        // The authored intensities are cached once: writing the pulsing value back into
+        // light.intensity every frame would compound the pulse onto itself.
+        private void BuildGateLightBases()
+        {
+            if (gateLights == null) return;
+
+            _gateLightBase = new float[gateLights.Length];
+            for (int i = 0; i < gateLights.Length; i++)
+            {
+                if (gateLights[i] != null) _gateLightBase[i] = gateLights[i].intensity;
+            }
         }
 
         // The authoring pass gives each arc its own start angle. Writing localRotation from
@@ -120,6 +140,7 @@ namespace NullFrontier.UI
             DriveGlows(t);
             DrivePlanet(t);
             DriveArcs(t);
+            DriveGateLights(t);
         }
 
         // The rim is a torus, so spinning it about its own axis would move nothing a viewer
@@ -138,6 +159,10 @@ namespace NullFrontier.UI
         private void DriveEmitters(float t)
         {
             if (_emissive == null) return;
+
+            // A script recompile during Play reloads the domain and drops non-serialized
+            // fields; without this the first pulse after the reload dereferences null.
+            if (_block == null) _block = new MaterialPropertyBlock();
 
             for (int i = 0; i < emitters.Length; i++)
             {
@@ -194,6 +219,8 @@ namespace NullFrontier.UI
                 earth.localRotation = Quaternion.Euler(0f, t * earthDegreesPerSecond, 0f);
             if (clouds != null)
                 clouds.localRotation = Quaternion.Euler(0f, t * cloudDegreesPerSecond, 0f);
+            if (cirrus != null)
+                cirrus.localRotation = Quaternion.Euler(0f, t * cirrusDegreesPerSecond, 0f);
         }
 
         // Alternating direction and rising speed means the three arcs cross, separate and
@@ -211,6 +238,23 @@ namespace NullFrontier.UI
                 float start = _arcStart != null ? _arcStart[i] : 0f;
                 arc.localRotation = Quaternion.Euler(0f, 0f,
                     start + direction * t * arcDegreesPerSecond * (1f + 0.35f * i));
+            }
+        }
+
+        // Three points breathing out of phase read as a gate whose energy is not constant;
+        // in lockstep they read as a light with a broken exposure.
+        private void DriveGateLights(float t)
+        {
+            if (gateLights == null || _gateLightBase == null) return;
+
+            for (int i = 0; i < gateLights.Length; i++)
+            {
+                var light = gateLights[i];
+                if (light == null) continue;
+
+                float phase = i * 2.1f + PhaseOf(light.transform.position);
+                light.intensity = _gateLightBase[i] * (1f + gateLightPulse
+                    * Mathf.Sin(2f * Mathf.PI * (t / gateLightSeconds) + phase));
             }
         }
 

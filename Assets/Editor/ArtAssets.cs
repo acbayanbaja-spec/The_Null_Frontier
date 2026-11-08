@@ -149,7 +149,10 @@ namespace NullFrontier.EditorTools
         /// it toward cool grey is what makes the same blocks read as concrete, glass and
         /// weathered steel under the city lights.
         /// </summary>
-        private static readonly Color KitTint = new Color(0.88f, 0.91f, 0.97f, 1f);
+        // Daylit renders exposed how little this multiplied: peach walls and mint poles
+        // still read as a toy set. Pulling the tint down to a cool mid grey is what turns
+        // the same atlas into weathered concrete and painted steel.
+        private static readonly Color KitTint = new Color(0.60f, 0.64f, 0.72f, 1f);
 
         /// <summary>
         /// One shared URP material per city kit, driven by the pack's single
@@ -352,30 +355,43 @@ namespace NullFrontier.EditorTools
             string assetPath = $"{MaterialDir}/Solid_{SafeName(label)}.mat";
             if (MaterialCache.TryGetValue(assetPath, out var cached)) return cached;
 
-            var existing = AssetDatabase.LoadAssetAtPath<Material>(assetPath);
-            if (existing != null)
+            var material = AssetDatabase.LoadAssetAtPath<Material>(assetPath);
+            if (material == null)
             {
-                MaterialCache[assetPath] = existing;
-                return existing;
+                material = NewUrpMaterial();
+                EnsureFolder(Path.GetDirectoryName(assetPath).Replace('\\', '/'));
+                AssetDatabase.CreateAsset(material, assetPath);
             }
 
-            var material = NewUrpMaterial();
+            // Restyled every run for the same reason as the kit materials: an existing
+            // asset would otherwise keep whatever asphalt colour the first build wrote.
             material.color = color;
+            if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", color);
             material.SetFloat("_Smoothness", smoothness);
             material.SetFloat("_Metallic", 0f);
+            EditorUtility.SetDirty(material);
 
-            EnsureFolder(Path.GetDirectoryName(assetPath).Replace('\\', '/'));
-            AssetDatabase.CreateAsset(material, assetPath);
             MaterialCache[assetPath] = material;
             return material;
         }
 
+        private static readonly Vector4 EarthSun =
+            new Vector4(-0.45f, 0.35f, 0.82f, 0f);
+
+        private static Shader CustomShader(string name)
+        {
+            var shader = Shader.Find(name);
+            if (shader != null) return shader;
+            Debug.LogWarning($"[NullFrontier] Shader {name} not found; falling back to Unlit.");
+            return UnlitShader;
+        }
+
         /// <summary>
-        /// The planet's surface: the real albedo map on an Unlit sphere. The scene's only
-        /// sun points away from the hemisphere the camera sees, so a Lit sphere would
-        /// render as a dark disc; drawing the map self-lit is how a fully sunlit world
-        /// hangs behind a night street without adding a second directional light to a
-        /// mobile pipeline. Unlit also means no emission keyword to lose on save.
+        /// The planet's surface. A fixed sun built into the shader supplies the terminator,
+        /// ocean specular, warm sunset band and night-side city lights; the scene's own
+        /// directional light points away from the visible hemisphere and would leave a
+        /// lit-material Earth as a dark disc. The shader also samples the cloud sheet to
+        /// shade the ground under the weather.
         /// </summary>
         public static Material GetEarthMaterial()
         {
@@ -395,15 +411,26 @@ namespace NullFrontier.EditorTools
             var albedo = AssetDatabase.LoadAssetAtPath<Texture2D>($"{SpaceDir}/Earth_Day.jpg");
             if (albedo == null)
                 Debug.LogWarning($"[NullFrontier] Earth map missing at {SpaceDir}/Earth_Day.jpg");
+            var clouds = AssetDatabase.LoadAssetAtPath<Texture2D>($"{SpaceDir}/Earth_Clouds.jpg");
 
-            material.shader = UnlitShader;
-            material.SetTexture("_BaseMap", albedo);
-            // Slightly over 1: the ocean in the source map is around 0.1, and ACES turns
-            // that into near-black. A cool overdrive keeps the water readable while only
-            // ice and cloud tops cross the bloom threshold.
-            material.SetColor("_BaseColor", new Color(1.10f, 1.14f, 1.20f, 1f));
-            material.SetFloat("_Surface", 0f);
-            material.SetFloat("_AlphaClip", 0f);
+            material.shader = CustomShader("NullFrontier/EarthSurface");
+            material.SetTexture("_MainTex", albedo);
+            if (clouds != null) material.SetTexture("_CloudTex", clouds);
+            material.SetVector("_SunDirection", EarthSun);
+            material.SetColor("_SunColor", new Color(1.0f, 0.95f, 0.88f, 1f));
+            material.SetColor("_AmbientColor", new Color(0.11f, 0.15f, 0.26f, 1f));
+            material.SetColor("_NightColor", new Color(0.015f, 0.022f, 0.045f, 1f));
+            material.SetColor("_AtmosphereColor", new Color(0.30f, 0.55f, 1f, 1f));
+            material.SetColor("_SunsetColor", new Color(1f, 0.55f, 0.22f, 1f));
+            material.SetColor("_SpecColor", new Color(0.75f, 0.88f, 1f, 1f));
+            material.SetColor("_CityLightColor", new Color(1f, 0.70f, 0.32f, 1f));
+            material.SetFloat("_AtmosphereStrength", 0.55f);
+            material.SetFloat("_SunsetStrength", 0.65f);
+            material.SetFloat("_SpecIntensity", 0.8f);
+            material.SetFloat("_Smoothness", 0.86f);
+            material.SetFloat("_CityLightStrength", 0.8f);
+            material.SetFloat("_CloudShadow", 0.35f);
+            material.SetVector("_CloudOffset", new Vector4(0.013f, 0f, 0f, 0f));
             material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Geometry;
             material.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
             EditorUtility.SetDirty(material);
@@ -413,16 +440,20 @@ namespace NullFrontier.EditorTools
         }
 
         /// <summary>
-        /// The cloud shell. The sheet is greyscale, so the importer turns its luminance
-        /// into alpha and the empty sky between the fronts disappears. Unlit is used so
-        /// the shell is self-lit like the planet and, crucially, so the alpha blend is
-        /// taken from the material's blend properties - the transparent surface keyword
-        /// does not survive on these assets, and without it the shell would draw as an
-        /// opaque grey lid over the planet.
+        /// A cloud shell. Coverage is the sheet's luminance; colour is shaded by the same
+        /// fixed sun as the surface, so the weather dims through the terminator. Two shells
+        /// are built from this method: the low deck and a thinner, faster cirrus layer.
         /// </summary>
         public static Material GetCloudMaterial()
         {
-            string assetPath = $"{MaterialDir}/Space_Clouds.mat";
+            // At 0.92 the low deck covered the continents completely and the planet read
+            // as a white ball; the surface map carries most of the detail.
+            return GetCloudMaterial("Space_Clouds", 0.6f);
+        }
+
+        public static Material GetCloudMaterial(string label, float opacity)
+        {
+            string assetPath = $"{MaterialDir}/{label}.mat";
             if (MaterialCache.TryGetValue(assetPath, out var cached)) return cached;
 
             var material = AssetDatabase.LoadAssetAtPath<Material>(assetPath);
@@ -437,23 +468,184 @@ namespace NullFrontier.EditorTools
             if (coverage == null)
                 Debug.LogWarning($"[NullFrontier] Cloud map missing at {SpaceDir}/Earth_Clouds.jpg");
 
-            material.shader = UnlitShader;
-            material.SetTexture("_BaseMap", coverage);
-            material.SetColor("_BaseColor", new Color(0.95f, 0.97f, 1f, 1f));
+            material.shader = CustomShader("NullFrontier/EarthClouds");
+            material.SetTexture("_MainTex", coverage);
+            material.SetVector("_SunDirection", EarthSun);
+            material.SetColor("_SunColor", new Color(1.0f, 0.96f, 0.92f, 1f));
+            material.SetColor("_NightColor", new Color(0.04f, 0.06f, 0.11f, 1f));
+            material.SetColor("_Tint", new Color(0.96f, 0.98f, 1f, 1f));
+            material.SetColor("_SunsetColor", new Color(1f, 0.55f, 0.22f, 1f));
+            material.SetFloat("_Opacity", opacity);
+            material.SetFloat("_Softness", 0.16f);
+            material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+            material.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
+            EditorUtility.SetDirty(material);
 
-            material.SetFloat("_Surface", 1f);          // transparent in the shader's alpha path
-            material.SetFloat("_Blend", 0f);            // alpha blend
+            MaterialCache[assetPath] = material;
+            return material;
+        }
+
+        /// <summary>Additive fresnel shell that hugs the planet silhouette.</summary>
+        public static Material GetAtmosphereMaterial()
+        {
+            string assetPath = $"{MaterialDir}/Space_AtmosphereShell.mat";
+            if (MaterialCache.TryGetValue(assetPath, out var cached)) return cached;
+
+            var material = AssetDatabase.LoadAssetAtPath<Material>(assetPath);
+            if (material == null)
+            {
+                material = NewUrpMaterial();
+                EnsureFolder(MaterialDir);
+                AssetDatabase.CreateAsset(material, assetPath);
+            }
+
+            material.shader = CustomShader("NullFrontier/AtmosphereShell");
+            material.SetColor("_Color", new Color(0.26f, 0.52f, 1f, 1f));
+            material.SetFloat("_Strength", 0.85f);
+            material.SetFloat("_Power", 3.4f);
+            material.SetVector("_SunDirection", EarthSun);
+            material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+            material.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
+            EditorUtility.SetDirty(material);
+
+            MaterialCache[assetPath] = material;
+            return material;
+        }
+
+        /// <summary>Animated energy membrane seen through the gate ring.</summary>
+        public static Material GetPortalMaterial()
+        {
+            string assetPath = $"{MaterialDir}/Portal_Membrane.mat";
+            if (MaterialCache.TryGetValue(assetPath, out var cached)) return cached;
+
+            var material = AssetDatabase.LoadAssetAtPath<Material>(assetPath);
+            if (material == null)
+            {
+                material = NewUrpMaterial();
+                EnsureFolder(MaterialDir);
+                AssetDatabase.CreateAsset(material, assetPath);
+            }
+
+            material.shader = CustomShader("NullFrontier/PortalVortex");
+            material.SetColor("_Color", new Color(0.32f, 0.76f, 1f, 1f));
+            material.SetFloat("_Intensity", 0.85f);
+            material.SetFloat("_Speed", 0.45f);
+            material.SetFloat("_Ribbons", 5f);
+            material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+            material.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
+            EditorUtility.SetDirty(material);
+
+            MaterialCache[assetPath] = material;
+            return material;
+        }
+
+        /// <summary>Lit-window grid painted onto one facade quad.</summary>
+        public static Material GetWindowMaterial(string label, Color cool, float intensity)
+        {
+            string assetPath = $"{MaterialDir}/Windows_{SafeName(label)}.mat";
+            if (MaterialCache.TryGetValue(assetPath, out var cached)) return cached;
+
+            var material = AssetDatabase.LoadAssetAtPath<Material>(assetPath);
+            if (material == null)
+            {
+                material = NewUrpMaterial();
+                EnsureFolder(MaterialDir);
+                AssetDatabase.CreateAsset(material, assetPath);
+            }
+
+            material.shader = CustomShader("NullFrontier/WindowGrid");
+            material.SetColor("_CoolColor", cool);
+            material.SetColor("_WarmColor", new Color(1f, 0.68f, 0.34f, 1f));
+            material.SetFloat("_Columns", 4f);
+            material.SetFloat("_Rows", 11f);
+            material.SetFloat("_LitRatio", 0.42f);
+            material.SetFloat("_Intensity", intensity);
+            material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+            material.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
+            EditorUtility.SetDirty(material);
+
+            MaterialCache[assetPath] = material;
+            return material;
+        }
+
+        /// <summary>Abstract holographic shopfront panel.</summary>
+        public static Material GetHoloMaterial(string label, Color color, float intensity)
+        {
+            string assetPath = $"{MaterialDir}/Holo_{SafeName(label)}.mat";
+            if (MaterialCache.TryGetValue(assetPath, out var cached)) return cached;
+
+            var material = AssetDatabase.LoadAssetAtPath<Material>(assetPath);
+            if (material == null)
+            {
+                material = NewUrpMaterial();
+                EnsureFolder(MaterialDir);
+                AssetDatabase.CreateAsset(material, assetPath);
+            }
+
+            material.shader = CustomShader("NullFrontier/HoloSign");
+            material.SetColor("_Color", color);
+            material.SetFloat("_Intensity", intensity);
+            material.SetFloat("_Scroll", 1.2f);
+            material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+            material.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
+            EditorUtility.SetDirty(material);
+
+            MaterialCache[assetPath] = material;
+            return material;
+        }
+
+        /// <summary>Additive particle material built on URP's shipped particle shader.</summary>
+        public static Material GetParticleMaterial(string label, Color color)
+        {
+            string assetPath = $"{MaterialDir}/Particle_{SafeName(label)}.mat";
+            if (MaterialCache.TryGetValue(assetPath, out var cached)) return cached;
+
+            var material = AssetDatabase.LoadAssetAtPath<Material>(assetPath);
+            if (material == null)
+            {
+                var shader = Shader.Find("Universal Render Pipeline/Particles/Unlit");
+                material = shader != null ? new Material(shader) : NewUrpMaterial();
+                EnsureFolder(MaterialDir);
+                AssetDatabase.CreateAsset(material, assetPath);
+            }
+
+            var glow = UiFactory.GlowSprite != null ? UiFactory.GlowSprite.texture : null;
+            if (glow != null) material.SetTexture("_BaseMap", glow);
+            material.SetColor("_BaseColor", color);
+            material.SetFloat("_Surface", 1f);
+            material.SetFloat("_Blend", 2f);   // additive
             material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
-            material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-            material.SetFloat("_SrcBlendAlpha", (float)UnityEngine.Rendering.BlendMode.One);
-            material.SetFloat("_DstBlendAlpha", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.One);
             material.SetFloat("_ZWrite", 0f);
-            material.SetFloat("_Cull", (float)UnityEngine.Rendering.CullMode.Back);
+            material.SetFloat("_Cull", (float)UnityEngine.Rendering.CullMode.Off);
             material.SetOverrideTag("RenderType", "Transparent");
-            material.SetFloat("_AlphaClip", 0f);
             material.SetShaderPassEnabled("ShadowCaster", false);
             material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
             material.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
+            EditorUtility.SetDirty(material);
+
+            MaterialCache[assetPath] = material;
+            return material;
+        }
+
+        /// <summary>Polished wet surface for puddles and the cable bundles.</summary>
+        public static Material GetWetMaterial(string label, Color color, float smoothness,
+            float metallic)
+        {
+            string assetPath = $"{MaterialDir}/Wet_{SafeName(label)}.mat";
+            if (MaterialCache.TryGetValue(assetPath, out var cached)) return cached;
+
+            var material = AssetDatabase.LoadAssetAtPath<Material>(assetPath);
+            if (material == null)
+            {
+                material = NewUrpMaterial();
+                EnsureFolder(MaterialDir);
+                AssetDatabase.CreateAsset(material, assetPath);
+            }
+
+            material.color = color;
+            material.SetFloat("_Smoothness", smoothness);
+            material.SetFloat("_Metallic", metallic);
             EditorUtility.SetDirty(material);
 
             MaterialCache[assetPath] = material;

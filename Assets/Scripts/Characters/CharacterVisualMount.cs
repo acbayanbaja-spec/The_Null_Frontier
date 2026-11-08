@@ -18,7 +18,7 @@ namespace NullFrontier.Characters
 
         private Transform _visual;
         private string _loadedModel;
-        private bool _pendingRealign;
+        private int _realignFrames;
 
         private void Awake()
         {
@@ -34,13 +34,16 @@ namespace NullFrontier.Characters
         {
             // Skinned-mesh bounds are not trustworthy until the animator has written a
             // frame, so measure again once the first pose exists.
-            if (_visual != null) _pendingRealign = true;
+            if (_visual != null) _realignFrames = 2;
         }
 
-        private void Update()
+        private void LateUpdate()
         {
-            if (!_pendingRealign) return;
-            _pendingRealign = false;
+            // LateUpdate, not Update: the Animator writes its pose between the two, and
+            // measuring in Update kept using the unposed bounds. That put the city player
+            // ten metres above his controller and left him out of every frame.
+            if (_realignFrames <= 0) return;
+            _realignFrames--;
             AlignFeetToController();
         }
 
@@ -64,12 +67,27 @@ namespace NullFrontier.Characters
 
             var instance = Instantiate(prefab, transform);
             instance.name = "CharacterVisual";
+            // Instantiate(original, parent) keeps the asset's world position; the visual
+            // belongs at the host's feet, and the alignment below measures from there.
+            instance.transform.localPosition = Vector3.zero;
             _visual = instance.transform;
             _loadedModel = definition.ModelPrefab;
 
+            // Movement comes from the CharacterController / NavMeshAgent. Left on, the
+            // clip's root motion drove the visual away from its owner - the city player
+            // was rendering ten metres above the camera within seconds of Play.
+            var animator = instance.GetComponentInChildren<Animator>();
+            if (animator != null)
+            {
+                animator.applyRootMotion = false;
+                // Write the default pose immediately; unposed skinned bounds are what the
+                // alignment used to measure, and they report a box around the origin.
+                animator.Update(0f);
+            }
+
             AlignFeetToController();
             EnsureRig(definition.AccentColor);
-            _pendingRealign = true;
+            _realignFrames = 2;
         }
 
         private void EnsureRig(Color accent)
@@ -96,25 +114,37 @@ namespace NullFrontier.Characters
             if (_visual == null) return;
 
             var controller = GetComponent<CharacterController>();
+            float floor = (transform.position + (controller != null
+                ? controller.center - Vector3.up * (controller.height * 0.5f)
+                : -Vector3.up * 0.9f)).y + groundGap;
+
+            // Humanoid rigs answer this exactly: the ankles are where the feet are, no
+            // matter what the skinned bounds claim. The bounds path below is the fallback
+            // for generic rigs and is why the character was once mounted ten metres up -
+            // unposed skinned bounds are a box around the skeleton origin, not the body.
+            var animator = _visual.GetComponentInChildren<Animator>();
+            if (animator != null && animator.isHuman)
+            {
+                var left = animator.GetBoneTransform(HumanBodyBones.LeftFoot);
+                var right = animator.GetBoneTransform(HumanBodyBones.RightFoot);
+                if (left != null && right != null)
+                {
+                    // The ankle bone sits a hand's width above the sole.
+                    float lowest = Mathf.Min(left.position.y, right.position.y);
+                    _visual.position += Vector3.up * (floor + 0.08f - lowest);
+                    return;
+                }
+            }
+
             var renderers = _visual.GetComponentsInChildren<Renderer>(true);
             if (renderers.Length == 0) return;
 
-            Vector3 pivot = _visual.position;
             Bounds bounds = renderers[0].bounds;
             for (int i = 1; i < renderers.Length; i++) bounds.Encapsulate(renderers[i].bounds);
-            if (bounds.size.y <= 0.0001f) return;
 
-            Vector3 footTarget = transform.position
-                + (controller != null
-                    ? controller.center - Vector3.up * (controller.height * 0.5f)
-                    : -Vector3.up * 0.9f)
-                + Vector3.up * groundGap;
-
-            // Bounds are world-space; convert the world correction into the local frame
-            // so it survives the parent's rotation.
-            Vector3 shift = new Vector3(pivot.x - bounds.center.x, footTarget.y - bounds.min.y,
-                pivot.z - bounds.center.z);
-            _visual.localPosition += transform.InverseTransformDirection(shift);
+            float shift = floor - bounds.min.y;
+            // A correction bigger than the character is garbage, not a pose.
+            if (Mathf.Abs(shift) < 4f) _visual.position += Vector3.up * shift;
         }
     }
 }

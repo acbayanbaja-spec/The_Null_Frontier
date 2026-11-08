@@ -60,6 +60,8 @@ namespace NullFrontier.EditorTools
         [MenuItem("Null Frontier/Build All Scenes")]
         public static void BuildAll()
         {
+            LastBuildSucceeded = false;
+
             // Scene creation is illegal in play mode, so the run would die on the first
             // step that needs one while the earlier asset work already looked finished.
             if (EditorApplication.isPlayingOrWillChangePlaymode)
@@ -87,9 +89,14 @@ namespace NullFrontier.EditorTools
             // still in memory, a scene that predates the rebuild. End on the shot the
             // user asked for.
             EditorSceneManager.OpenScene($"{ScenesDir}/{MainMenuScene}.unity", OpenSceneMode.Single);
+            LastBuildSucceeded = true;
             Debug.Log("[NullFrontier] MainMenu and VerticalCity rebuilt. " +
                       "MainMenu is open: press Play, then build the APK from File > Build Profiles.");
         }
+
+        /// <summary>True when the last BuildAll run reached the end. A failed step leaves
+        /// the scenes as they were, so callers must not treat a return as success.</summary>
+        public static bool LastBuildSucceeded { get; private set; }
 
         /// <summary>
         /// Only scenes with unsaved edits need the user's consent, because BuildAll throws
@@ -310,8 +317,10 @@ namespace NullFrontier.EditorTools
             // 4.3 m emissive disc that washed out the whole shot.
             ring.transform.localScale = new Vector3(0.98f, 0.025f, 0.98f);
             Object.DestroyImmediate(ring.GetComponent<Collider>());
+            // At 1.5 the ring read as a mint searchlight that lit the whole foreground
+            // and out-shone the character standing on it; it is a rim, not a lamp.
             ring.GetComponent<Renderer>().sharedMaterial =
-                ArtAssets.GetNeonMaterial("PlinthRing", new Color(0.1f, 0.8f, 1f), 1.5f);
+                ArtAssets.GetNeonMaterial("PlinthRing", new Color(0.1f, 0.7f, 1f), 0.7f);
             ring.layer = _artLayer;
 
             // The hero faces the gate, not the player. The reference reads "about to step
@@ -332,10 +341,12 @@ namespace NullFrontier.EditorTools
             light.transform.LookAt(new Vector3(0f, 1.2f, 0f));
             var key = light.AddComponent<Light>();
             key.type = LightType.Spot;
-            key.color = new Color(0.85f, 0.92f, 1f);
-            key.intensity = 5.2f;
+            // Nearly neutral rather than cyan: against the blue ambient it separated the
+            // skin and the gear from the portal behind instead of tinting him into it.
+            key.color = new Color(0.95f, 0.95f, 1f);
+            key.intensity = 6.0f;
             key.range = 14f;
-            key.spotAngle = 60f;
+            key.spotAngle = 58f;
             key.shadows = LightShadows.None;
 
             // One cool key plus a dark ambient left every operative as a black cut-out on
@@ -386,21 +397,34 @@ namespace NullFrontier.EditorTools
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.Exponential;
             RenderSettings.fogColor = day ? DayHaze : SkyInk;
-            RenderSettings.fogDensity = day ? 0.0035f : 0.0055f;
+            // The night fog was thick enough to grey out the far facades the gate is
+            // supposed to reflect in the wet street; the plane still reads as depth at
+            // this density without swallowing the avenue.
+            RenderSettings.fogDensity = day ? 0.0028f : 0.0042f;
 
             if (day)
             {
                 // Ambient straight off the sky is what makes a sunny street look sunny:
                 // the trilight rig below only ever lit the upward-facing surfaces.
                 RenderSettings.ambientMode = AmbientMode.Skybox;
-                RenderSettings.ambientIntensity = 1.15f;
+                // Full sky ambient on top of a 1.6 sun flattened every surface into the
+                // same blue wash. Pulling it back lets the warm key and the shadows model
+                // the blocks instead of tinting all of them equally.
+                RenderSettings.ambientIntensity = 0.72f;
             }
             else
             {
                 RenderSettings.ambientMode = AmbientMode.Trilight;
-                RenderSettings.ambientSkyColor = new Color(0.42f, 0.50f, 0.70f);
-                RenderSettings.ambientEquatorColor = new Color(0.20f, 0.24f, 0.36f);
-                RenderSettings.ambientGroundColor = new Color(0.11f, 0.12f, 0.17f);
+                // The old rig was bright enough to paint every facade the same pale
+                // lavender, which erased the windows and the neon. A dark cool ambient
+                // lets the embedded signage and the gate lights carry the street.
+                // Play-mode captures showed the facades as near-black planes with neon
+                // windows floating on them, so the rig is lifted into a deep blue rather
+                // than a charcoal one: enough fill to read the architecture, still far
+                // below what would wash the signage out.
+                RenderSettings.ambientSkyColor = new Color(0.30f, 0.36f, 0.52f);
+                RenderSettings.ambientEquatorColor = new Color(0.16f, 0.19f, 0.30f);
+                RenderSettings.ambientGroundColor = new Color(0.08f, 0.09f, 0.14f);
             }
 
             // Grabbing "the first light" used to reconfigure the showcase key into the sun,
@@ -420,10 +444,14 @@ namespace NullFrontier.EditorTools
             sun.name = "Directional Light";
             sun.type = LightType.Directional;
             sun.transform.rotation = Quaternion.Euler(day ? 46f : 52f, day ? -34f : -28f, 0f);
-            sun.color = day ? new Color(1f, 0.94f, 0.84f) : new Color(0.62f, 0.72f, 1f);
-            sun.intensity = day ? 2.15f : 1.7f;
+            sun.color = day ? new Color(1f, 0.91f, 0.80f) : new Color(0.50f, 0.62f, 0.98f);
+            // A night sun is the moon bounce: at 0.85 it left the operative a silhouette
+            // with no readable form. 1.0 is still a fraction of the day key.
+            // With the reduced sky ambient the key can carry the daylight look: 1.85 on a
+            // warm tint separates sunlit and shadowed faces instead of clipping them.
+            sun.intensity = day ? 1.85f : 1.0f;
             sun.shadows = LightShadows.Soft;
-            sun.shadowStrength = day ? 0.82f : 0.55f;
+            sun.shadowStrength = day ? 0.9f : 0.5f;
             sun.cullingMask = ~0;
             RenderSettings.sun = sun;
         }
@@ -454,10 +482,15 @@ namespace NullFrontier.EditorTools
                 AssetDatabase.CreateAsset(material, path);
             }
 
-            material.SetFloat("_Exposure", day ? 1.25f : 0.22f);
-            material.SetFloat("_SunSize", day ? 0.055f : 0.02f);
+            // The day sky was authored at 1.25 exposure and 1.35 atmosphere; through ACES
+            // that clipped the blue channel first and the whole sky skewed green-yellow.
+            // At this exposure the sky holds a blue gradient and the horizon stays pale.
+            material.SetFloat("_Exposure", day ? 0.38f : 0.22f);
+            material.SetFloat("_SunSize", day ? 0.035f : 0.02f);
             material.SetFloat("_SunSizeConvergence", day ? 5f : 10f);
-            material.SetFloat("_AtmosphereThickness", day ? 1.35f : 0.25f);
+            // 1.0 atmosphere pushed the horizon into a green-yellow band once the sky was
+            // exposed down; 0.85 keeps the zenith blue and the horizon pale instead.
+            material.SetFloat("_AtmosphereThickness", day ? 0.85f : 0.25f);
             material.SetColor("_SkyTint", day ? new Color(0.40f, 0.60f, 0.95f) : new Color(0.07f, 0.10f, 0.22f));
             material.SetColor("_GroundColor", day ? new Color(0.34f, 0.36f, 0.42f) : new Color(0.02f, 0.025f, 0.05f));
             material.SetColor("_Tint", Color.white);
@@ -506,9 +539,12 @@ namespace NullFrontier.EditorTools
             tonemap.mode.Override(TonemappingMode.ACES);
 
             var bloom = GetOrAdd<Bloom>(profile);
-            bloom.threshold.Override(day ? 1.15f : 1.05f);
-            bloom.intensity.Override(day ? 0.45f : 0.62f);
-            bloom.scatter.Override(day ? 0.55f : 0.72f);
+            bloom.threshold.Override(day ? 1.25f : 0.95f);
+            // The gate membrane covered a quarter of the frame, so its bloom bled over the
+            // whole plaza; trimming the intensity keeps the halo on the ring and the signs.
+            // Daylight gets almost none: a lit street has no light to bloom into.
+            bloom.intensity.Override(day ? 0.22f : 0.68f);
+            bloom.scatter.Override(day ? 0.55f : 0.76f);
             bloom.clamp.Override(day ? 160f : 220f);
 
             // Daylight is the one place the grade adds rather than subtracts: exposure up,
@@ -518,14 +554,25 @@ namespace NullFrontier.EditorTools
             // The night exposure was authored against a grade that never actually ran. Now
             // that ACES is live it darkens the midtones by design, so the night lift is
             // raised to keep the street where the lighting was tuned.
-            grade.postExposure.Override(day ? 0.38f : 0.22f);
-            grade.contrast.Override(day ? 10f : 28f);
-            grade.saturation.Override(day ? 16f : -14f);
+            // The day grade used to add another 0.38 stops on top of a 1.25-exposure sky,
+            // which is why sunlight read as flat white. This sits below neutral and lets
+            // the 1.6 sun do the lifting.
+            grade.postExposure.Override(day ? 0.06f : 0.42f);
+            // The night grade was over-crushed: 32 contrast plus desaturation turned the
+            // lit geometry into black gaps between the neon. Midtones now survive ACES and
+            // the colour of the planet and the uniforms comes through.
+            grade.contrast.Override(day ? 20f : 26f);
+            // The Kenney kit's colormap is a toy palette; +16 saturation turned a street
+            // into candy. A small positive value keeps the blue hour out of the day shot
+            // without bringing the candy back.
+            grade.saturation.Override(day ? 7f : 0f);
 
             // Cool shadows against a warm key is what separates a graded night city
             // from a flat render of dark boxes.
             var split = GetOrAdd<SplitToning>(profile);
-            split.shadows.Override(day ? new Color(0.60f, 0.70f, 0.92f) : new Color(0.50f, 0.60f, 0.86f));
+            // A strong lavender in the day shadows was tinting the pale kit palette into
+            // pastel; a cool grey shadow keeps the concrete reading as concrete.
+            split.shadows.Override(day ? new Color(0.52f, 0.58f, 0.70f) : new Color(0.50f, 0.60f, 0.86f));
             split.highlights.Override(day ? new Color(1f, 0.96f, 0.88f) : new Color(0.94f, 0.88f, 0.80f));
             split.balance.Override(day ? -0.04f : -0.08f);
 
@@ -540,7 +587,7 @@ namespace NullFrontier.EditorTools
             // With the grade live it stacks on top of the menu's own darkened frame, so it
             // is set to a corner shade rather than a cinematic tunnel.
             var vignette = GetOrAdd<Vignette>(profile);
-            vignette.intensity.Override(day ? 0.10f : 0.30f);
+            vignette.intensity.Override(day ? 0.10f : 0.28f);
             vignette.smoothness.Override(0.45f);
 
             EditorUtility.SetDirty(profile);
@@ -627,6 +674,15 @@ namespace NullFrontier.EditorTools
             var cineCam = camGo.AddComponent<CinemachineCamera>();
             var follow = camGo.AddComponent<CinemachineThirdPersonFollow>();
             cineCam.Target.TrackingTarget = lookAt;
+
+            // ThirdPersonFollow is a body-only component, so without an aim stage the
+            // lens kept the virtual camera's identity rotation: the camera never pitched,
+            // look input never aimed, and the player's feet were cropped out of frame on
+            // every run. Composing the rotation onto the chest pivot is what makes the
+            // framing a real over-the-shoulder shot.
+            var aim = camGo.AddComponent<CinemachineRotationComposer>();
+            aim.Damping = new Vector2(0.12f, 0.18f);
+            cineCam.Target.LookAtTarget = lookAt;
             cineCam.Priority = 100;
             // The brain copies the virtual lens onto the camera every frame, so this - not
             // PlayerCameraController's field - is the lens the game is actually shot on.
@@ -833,8 +889,11 @@ namespace NullFrontier.EditorTools
             var rng = new System.Random(77);
             float half = Mathf.Max(26f, CityKit.Extent - CityKit.BlockPitch);
 
+            // The spawn volume has no beacon: it sits four metres in front of the player,
+            // so a column of light there stood exactly where the third-person lens looks
+            // and speared the opening frame. The trigger still fires on spawn.
             ReachMarker(root.transform, "vertical_city_spawn", new Vector3(0f, 0f, 4f),
-                "MissionMarker_Spawn");
+                "MissionMarker_Spawn", false);
 
             // Terminal 7 is the opening mission's interact target, so it goes on a
             // predictable corner rather than at random.
@@ -874,7 +933,8 @@ namespace NullFrontier.EditorTools
                 : new Vector3(travel, 0f, lane);
         }
 
-        private static void ReachMarker(Transform parent, string id, Vector3 position, string name)
+        private static void ReachMarker(Transform parent, string id, Vector3 position, string name,
+            bool showBeacon = true)
         {
             // The beam is what the player aims at; the volume is what the mission reads.
             // They used to be the same cylinder, which meant a 2.4 m solid column of neon
@@ -892,6 +952,8 @@ namespace NullFrontier.EditorTools
             UiFactory.SetField(marker, "id", id);
             UiFactory.SetField(marker, "eventType", MissionManager.MissionEventType.Reach);
             UiFactory.SetField(marker, "notifyOnce", true);
+
+            if (!showBeacon) return;
 
             var pillar = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             pillar.name = "Beacon";

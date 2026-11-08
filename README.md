@@ -113,14 +113,18 @@ Install Unity with the **Android Build Support** module (includes SDK/NDK).
 | Invalid bearer token | PASS — `401 {"error":"unauthorized"}` |
 | Wrong password (stub creds) | PASS — `401 {"error":"invalid_credentials"}` |
 
-**Unity client (2026-11-08):**
+**Unity client (2026-11-08):** real Game-view captures are in
+`Docs/Captures/` (`main_menu_2026-11-08.png`, `vertical_city_2026-11-08.png`).
 
 | Test | Result |
 |---|---|
 | Offline Roslyn compile gate (`Temp/nfcheck/check.sh`) | PASS — runtime + editor assemblies |
 | Scene rebuild (`SceneBuilder.BuildAll`) | PASS — MainMenu and VerticalCity written |
-| Main menu in Play mode (editor, 1380×610) | PASS — portal, Earth, UI and character render; runtime log clean |
-| Gameplay, all menus, save/continue, Android APK | NOT TESTED this session |
+| Main menu in Play mode (editor, Game view) | PASS — portal, textured Earth, character and full UI render; 12 active buttons, 10 persistent listeners; Continue/Co-op wired at runtime |
+| VerticalCity in Play mode | PASS — HUD shows real values (JAHred Lv. 3, "Missing Players", 32/32 ammo, 6 hostiles); player feet Y≈0.31, body centre Y≈1.14; camera pitches and frames feet + shadow |
+| Play-mode console | PASS — zero errors after teardown guards in `PlayerCameraController` and `DesktopInputProvider` |
+| Save/continue round trip, reload/switch/fire, credits page | NOT TESTED (no scripted input driver yet) |
+| Android APK build from current commit | NOT BUILT this pass |
 | Physical Android device (performance, touch, thermals) | NEVER TESTED |
 
 ## 6. Known issues
@@ -128,6 +132,11 @@ Install Unity with the **Android Build Support** module (includes SDK/NDK).
 - Android has not been built from the current commit or run on a device. Do not treat the
   quality tiers or touch layout as validated.
 - The visual target is not met: characters and environments are low-poly licensed art.
+  The operative is the Quaternius humanoid with procedural gear; realistic assets need
+  approval before purchase. Some compound buildings show a slightly detached facade
+  sheet near a wing.
+- Save/continue, reload/switch/fire and the credits page are implemented but not yet
+  verified in a scripted Play run.
 - Online co-op is not implemented; the CO-OP page says so.
 - Cloud saves are upload-only with a single slot; download/merge is not implemented.
 - Skill ranks are runtime-only (skill points persist; ranks do not).

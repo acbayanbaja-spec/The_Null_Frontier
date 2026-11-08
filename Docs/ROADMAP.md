@@ -16,9 +16,17 @@ any multiplayer marketing.
   no longer uploads over the cloud copy (C5 partial), URP `PostProcessData`
   repair (H1), in-game credits and StreamingAssets notices (H2), reload reset on
   weapon switch (H3), touch weapon switch (H4), and touch edge retention (M4).
-  Offline Roslyn compile gate passes. **Scene rebuild and Play-mode verification
-  are still pending**, so none of the runtime/UI changes should be treated as
-  verified yet.
+- **2026-11-08, later pass** — Both scenes rebuilt and inspected in editor Play.
+  Menu renders with full UI (12 active buttons, 10 persistent listeners; Continue
+  and Co-op wired at runtime). VerticalCity renders with a real HUD
+  (JAHred Lv. 3, mission "Missing Players", 32/32 ammo, 6 hostiles). Player feet
+  land at Y≈0.31 on the Y=0 floor, body centre Y≈1.14; camera now pitches through
+  a `CinemachineRotationComposer` aim stage and frames an over-the-shoulder shot
+  with feet and shadow visible. Two play-mode teardown null references were fixed
+  (`PlayerCameraController`, `DesktopInputProvider`); the final runs logged zero
+  console errors. City facades gained four-sided glass and lit window panels
+  anchored to each building's main mass. Offline Roslyn gate still passes.
+  **Android remains untested.** See `TECHNICAL_AUDIT.md` §1.1.
 
 ---
 
@@ -36,6 +44,11 @@ any multiplayer marketing.
 - H3 reload/switch soft-lock; H4 mobile weapon switch.
 - Compile gate, rebuild both scenes, Play capture, zero runtime errors.
 - Commit + push checkpoint.
+
+**Status:** compile gate, scene rebuild and Play capture are done (2026-11-08,
+see the progress log). Still unverified: returning-save inventory after a real
+menu load, reload/switch/fire via scripted input, and the credits page in Play.
+Those are the remaining Stage 0 acceptance checks.
 
 **Acceptance:** returning save shows its inventory after menu load; every roster
 row selectable; co-op page states it is unavailable; player can reload, switch

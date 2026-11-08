@@ -51,8 +51,8 @@ namespace NullFrontier.EditorTools
 
         // The world seen through the gate. 30 m across at 88 m subtends about 18 degrees,
         // which fills the 21 degree opening without becoming a wall behind it.
-        private const float PlanetZ = -88f;
-        private const float PlanetDiameter = 30f;
+        private const float PlanetZ = -80f;
+        private const float PlanetDiameter = 36f;
 
         /// <summary>Builds the stage and wires the runtime ambience onto the menu camera.</summary>
         public static bool Build(Transform menuRoot, Transform focus, int artLayer, int groundLayer)
@@ -74,7 +74,10 @@ namespace NullFrontier.EditorTools
                                  "back to an empty plaza with rain and signage only.");
             }
 
+            StreetDressing(stage.transform, artLayer);
+            OverheadCables(stage.transform, artLayer);
             Ground(stage.transform, groundLayer);
+            Puddles(stage.transform, groundLayer, rng);
             var ring = BuildGate(stage.transform, artLayer);
             WetFloorProbe(stage.transform, artLayer);
             var traffic = BuildTraffic(stage.transform, artLayer, rng);
@@ -96,7 +99,8 @@ namespace NullFrontier.EditorTools
         {
             var neon = new System.Collections.Generic.List<Renderer>();
             var arcs = new System.Collections.Generic.List<Transform>();
-            Transform earth = null, clouds = null;
+            var lights = new System.Collections.Generic.List<Light>();
+            Transform earth = null, clouds = null, cirrus = null;
 
             foreach (var renderer in stage.GetComponentsInChildren<Renderer>(true))
             {
@@ -110,6 +114,11 @@ namespace NullFrontier.EditorTools
                 if (candidate.name == "PortalArc") arcs.Add(candidate);
                 else if (candidate.name == "Earth") earth = candidate;
                 else if (candidate.name == "CloudShell") clouds = candidate;
+                else if (candidate.name == "CirrusShell") cirrus = candidate;
+            }
+            foreach (var candidate in stage.GetComponentsInChildren<Light>(true))
+            {
+                if (candidate.name.StartsWith("GateLight")) lights.Add(candidate);
             }
 
             var motion = stage.AddComponent<NullFrontier.UI.MenuStageMotion>();
@@ -119,7 +128,9 @@ namespace NullFrontier.EditorTools
                 stage.GetComponentsInChildren<SpriteRenderer>(true));
             UiFactory.SetField(motion, "earth", earth);
             UiFactory.SetField(motion, "clouds", clouds);
+            UiFactory.SetField(motion, "cirrus", cirrus);
             UiFactory.SetField(motion, "portalArcs", arcs.ToArray());
+            UiFactory.SetField(motion, "gateLights", lights.ToArray());
         }
 
         // ------------------------------------------------------------------ ground
@@ -195,7 +206,188 @@ namespace NullFrontier.EditorTools
                     Vector3 face = new Vector3(side * faceLine, 0f,
                         building.transform.position.z);
                     Signage(parent, face, side, height, layer, rng, i == 0);
+                    FacadeDetail(parent, face, building.transform.position.z, side, height,
+                        layer, rng, i);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Breaks up the flat kit facade with a lit-window grid, a mounted holo screen on
+        /// the midground blocks and a mast with a beacon on every third roof. The grid is
+        /// one additive quad whose shader draws the cells, so the whole avenue gains
+        /// hundreds of windows for one draw call per building.
+        /// </summary>
+        private static void FacadeDetail(Transform parent, Vector3 face, float buildingZ,
+            int side, float height, int layer, System.Random rng, int index)
+        {
+            var windows = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            windows.name = "FacadeWindows";
+            windows.transform.SetParent(parent, false);
+            windows.transform.position = new Vector3(face.x - side * 0.55f, height * 0.52f,
+                buildingZ);
+            windows.transform.rotation = Quaternion.Euler(0f, side > 0 ? -90f : 90f, 0f);
+            windows.transform.localScale = new Vector3(8.4f, height * 0.8f, 1f);
+            var windowRenderer = windows.GetComponent<MeshRenderer>();
+            windowRenderer.sharedMaterial = ArtAssets.GetWindowMaterial("MenuFacade",
+                new Color(0.20f, 0.55f, 1f), 0.9f);
+            windowRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            windowRenderer.receiveShadows = false;
+            windows.layer = layer;
+            Object.DestroyImmediate(windows.GetComponent<Collider>());
+
+            if (index == 1 || index == 3)
+            {
+                Color holo = index == 1
+                    ? new Color(1f, 0.22f, 0.62f)
+                    : new Color(0.2f, 0.95f, 1f);
+                HoloBillboard(parent, face, buildingZ - 2.2f, side, height, layer, holo);
+            }
+
+            if (index % 3 != 0) return;
+
+            // Mast and beacon: a vertical silhouette breaking the roof line so the skyline
+            // is not ten identical boxes.
+            var mast = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            mast.name = "Antenna";
+            mast.transform.SetParent(parent, false);
+            mast.transform.position = new Vector3(face.x - side * 1.8f, height + 1.7f,
+                buildingZ - 1.5f);
+            mast.transform.localScale = new Vector3(0.07f, 1.7f, 0.07f);
+            mast.GetComponent<Renderer>().sharedMaterial =
+                ArtAssets.GetSolidMaterial("Mast", new Color(0.06f, 0.07f, 0.09f), 0.35f);
+            mast.layer = layer;
+            Object.DestroyImmediate(mast.GetComponent<Collider>());
+
+            var beacon = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            beacon.name = "AntennaBeacon";
+            beacon.transform.SetParent(parent, false);
+            beacon.transform.position = new Vector3(face.x - side * 1.8f, height + 3.5f,
+                buildingZ - 1.5f);
+            beacon.transform.localScale = Vector3.one * 0.22f;
+            beacon.GetComponent<Renderer>().sharedMaterial =
+                ArtAssets.GetNeonMaterial("AntennaBeacon", new Color(1f, 0.25f, 0.3f), 4.5f);
+            beacon.layer = layer;
+            Object.DestroyImmediate(beacon.GetComponent<Collider>());
+        }
+
+        private static void HoloBillboard(Transform parent, Vector3 face, float z, int side,
+            float height, int layer, Color color)
+        {
+            // A dark backing box first, so the additive glyphs are mounted on a screen
+            // rather than floating in front of the brickwork.
+            var backing = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            backing.name = "HoloMount";
+            backing.transform.SetParent(parent, false);
+            backing.transform.position = new Vector3(face.x - side * 0.62f, height * 0.63f, z);
+            backing.transform.localScale = new Vector3(0.14f, 9.6f, 5.2f);
+            backing.GetComponent<Renderer>().sharedMaterial =
+                ArtAssets.GetSolidMaterial("HoloFrame", new Color(0.03f, 0.035f, 0.05f), 0.4f);
+            backing.layer = layer;
+            Object.DestroyImmediate(backing.GetComponent<Collider>());
+
+            var panel = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            panel.name = "HoloSign";
+            panel.transform.SetParent(parent, false);
+            panel.transform.position = new Vector3(face.x - side * 0.72f, height * 0.63f, z);
+            panel.transform.rotation = Quaternion.Euler(0f, side > 0 ? -90f : 90f, 0f);
+            panel.transform.localScale = new Vector3(4.6f, 8.8f, 1f);
+            var renderer = panel.GetComponent<MeshRenderer>();
+            renderer.sharedMaterial = ArtAssets.GetHoloMaterial("MenuSign", color, 1.15f);
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            panel.layer = layer;
+            Object.DestroyImmediate(panel.GetComponent<Collider>());
+        }
+
+        /// <summary>Cable bundles sagging across the avenue, silhouetted against the gate.</summary>
+        private static void OverheadCables(Transform parent, int layer)
+        {
+            var material = ArtAssets.GetNeonMaterial("MenuCable",
+                new Color(0.025f, 0.035f, 0.055f), 1f);
+            float[] runs = { -7f, -20f, -33f, -48f };
+            foreach (float z in runs)
+            {
+                for (int bundle = 0; bundle < 3; bundle++)
+                {
+                    var go = new GameObject("Cable");
+                    go.transform.SetParent(parent, false);
+                    go.layer = layer;
+
+                    var line = go.AddComponent<LineRenderer>();
+                    line.useWorldSpace = true;
+                    line.positionCount = 13;
+                    line.widthMultiplier = 0.035f;
+                    line.numCapVertices = 2;
+                    line.sharedMaterial = material;
+                    line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                    line.receiveShadows = false;
+
+                    float y = 8.4f + bundle * 0.7f;
+                    for (int i = 0; i < 13; i++)
+                    {
+                        float t = i / 12f;
+                        float x = Mathf.Lerp(-12.6f, 12.6f, t);
+                        float sag = -1.5f * Mathf.Sin(Mathf.PI * t);
+                        line.SetPosition(i, new Vector3(x, y + sag, z + bundle * 0.4f));
+                    }
+                }
+            }
+        }
+
+        /// <summary>Ground-level clutter from the same CC0 kit, kept out of the lane.</summary>
+        private static void StreetDressing(Transform parent, int layer)
+        {
+            Prop(parent, "dumpster", new Vector3(-8.3f, 0f, -12f), 2.2f, layer);
+            Prop(parent, "dumpster", new Vector3(8.4f, 0f, -29f), 2.2f, layer);
+            Prop(parent, "shipping-container-a", new Vector3(-9.2f, 0f, -47f), 5f, layer);
+            Prop(parent, "detail-tank", new Vector3(8.5f, 0f, -53f), 2.2f, layer);
+            Prop(parent, "construction-barrier", new Vector3(5.7f, 0f, -4f), 2.4f, layer);
+            Prop(parent, "construction-cone", new Vector3(-5.3f, 0f, -6f), 0.7f, layer);
+            Prop(parent, "construction-cone", new Vector3(5.4f, 0f, -10f), 0.7f, layer);
+        }
+
+        private static void Prop(Transform parent, string model, Vector3 position,
+            float length, int layer)
+        {
+            // Street clutter (dumpsters, barriers, cones) ships in the roads kit, not the
+            // industrial one; the stage's prop list mixes the two, so resolve per name.
+            string pack = ArtAssets.HasModel(Industrial, model) ? Industrial : Roads;
+            var prop = Place(pack, model, position, length, layer);
+            if (prop != null) prop.transform.SetParent(parent, true);
+        }
+
+        /// <summary>
+        /// Flat puddles of near-mirror asphalt. The reflection probe supplies the neon; the
+        /// puddles only have to break the ground into wet sheets so the street is not one
+        /// uniform matte plane.
+        /// </summary>
+        private static void Puddles(Transform parent, int layer, System.Random rng)
+        {
+            var material = ArtAssets.GetWetMaterial("MenuPuddle",
+                new Color(0.02f, 0.028f, 0.045f), 0.97f, 0.55f);
+
+            for (int i = 0; i < 7; i++)
+            {
+                var puddle = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                puddle.name = "Puddle";
+                puddle.transform.SetParent(parent, false);
+                // The road tiles are laid at y = 0.012, so a puddle authored on the ground
+                // plane was entirely underneath them. It sits a couple of millimetres above
+                // the asphalt, and still below the kerb spill sprites at 0.02.
+                puddle.transform.position = new Vector3(
+                    Mathf.Lerp(-5.2f, 5.2f, (float)rng.NextDouble()),
+                    0.014f + i * 0.0004f,
+                    Mathf.Lerp(4f, -56f, (float)rng.NextDouble()));
+                puddle.transform.rotation = Quaternion.Euler(90f, 0f, rng.Next(360));
+                puddle.transform.localScale = new Vector3(
+                    Mathf.Lerp(2.2f, 5.2f, (float)rng.NextDouble()),
+                    Mathf.Lerp(1.4f, 3.6f, (float)rng.NextDouble()), 1f);
+                var renderer = puddle.GetComponent<MeshRenderer>();
+                renderer.sharedMaterial = material;
+                renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                puddle.layer = layer;
+                Object.DestroyImmediate(puddle.GetComponent<Collider>());
             }
         }
 
@@ -260,6 +452,9 @@ namespace NullFrontier.EditorTools
                 new Vector2(19f, 19f), UiFactory.GlowSprite,
                 new Color(0.30f, 0.78f, 1f, 0.13f), -18, layer);
 
+            BuildPortalMembrane(gate.transform, layer);
+            BuildPortalParticles(gate.transform, layer);
+            BuildGateLights(gate.transform, layer);
             BuildPortalArcs(gate.transform, layer);
 
             Sky(parent, layer);
@@ -333,6 +528,30 @@ namespace NullFrontier.EditorTools
             shell.receiveShadows = false;
             clouds.layer = layer;
 
+            // A second, thinner deck above the first. Two speeds at different scales are
+            // what separate weather from paint on the surface.
+            var cirrus = new GameObject("CirrusShell");
+            cirrus.transform.SetParent(pivot.transform, false);
+            cirrus.transform.localScale = Vector3.one * (PlanetDiameter * 1.014f);
+            cirrus.AddComponent<MeshFilter>().sharedMesh = SphereMesh();
+            var high = cirrus.AddComponent<MeshRenderer>();
+            high.sharedMaterial = ArtAssets.GetCloudMaterial("Space_Cirrus", 0.38f);
+            high.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            high.receiveShadows = false;
+            cirrus.layer = layer;
+
+            // A real fresnel shell around the body, in addition to the sprite glow behind
+            // it: the sprite supplies the bloom, this supplies the thin blue limb.
+            var air = new GameObject("AtmosphereShell");
+            air.transform.SetParent(pivot.transform, false);
+            air.transform.localScale = Vector3.one * (PlanetDiameter * 1.045f);
+            air.AddComponent<MeshFilter>().sharedMesh = SphereMesh();
+            var haze = air.AddComponent<MeshRenderer>();
+            haze.sharedMaterial = ArtAssets.GetAtmosphereMaterial();
+            haze.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            haze.receiveShadows = false;
+            air.layer = layer;
+
             // Outer scatter: wide, very faint, and behind the world so it only ever shows
             // as the bloom the atmosphere puts around itself.
             Billboard(parent, "AtmosphereHalo", new Vector3(1.5f, 16f, PlanetZ - 8f),
@@ -374,6 +593,185 @@ namespace NullFrontier.EditorTools
                 renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 arc.layer = layer;
             }
+        }
+
+        /// <summary>
+        /// A quad of animated energy filling the gate opening. Additive so the planet and
+        /// the starfield still read through it; the shader's own time uniform does the
+        /// swirl, which keeps the runtime cost to one draw call and no CPU work.
+        /// </summary>
+        private static void BuildPortalMembrane(Transform parent, int layer)
+        {
+            var quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            quad.name = "PortalMembrane";
+            quad.transform.SetParent(parent, false);
+            quad.transform.position = new Vector3(0f, GateY, GateZ + 0.7f);
+            // 1.78x filled the ring but bleached the planet behind it to a flat cyan disc;
+            // 1.5x keeps the energy at the rim and lets the world read through the middle.
+            quad.transform.localScale = new Vector3(GateRadius * 1.5f, GateRadius * 1.5f, 1f);
+            var renderer = quad.GetComponent<MeshRenderer>();
+            renderer.sharedMaterial = ArtAssets.GetPortalMaterial();
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            quad.layer = layer;
+            Object.DestroyImmediate(quad.GetComponent<Collider>());
+        }
+
+        /// <summary>
+        /// Two particle systems rather than one: motes drifting out of the aperture, and
+        /// embers climbing off the wet street. Both simulate on the CPU at these counts,
+        /// which is the only VFX cost the menu adds to the first frame.
+        /// </summary>
+        private static void BuildPortalParticles(Transform parent, int layer)
+        {
+            var motes = new GameObject("PortalMotes");
+            motes.transform.SetParent(parent, false);
+            motes.transform.position = new Vector3(0f, GateY, GateZ + 0.9f);
+            motes.layer = layer;
+
+            var system = motes.AddComponent<ParticleSystem>();
+            var main = system.main;
+            main.loop = true;
+            main.playOnAwake = true;
+            main.duration = 6f;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(3.5f, 6f);
+            main.startSpeed = new ParticleSystem.MinMaxCurve(0.05f, 0.28f);
+            main.startSize = new ParticleSystem.MinMaxCurve(0.06f, 0.22f);
+            main.startColor = new Color(0.55f, 0.86f, 1f, 0.9f);
+            main.maxParticles = 120;
+            main.simulationSpace = ParticleSystemSimulationSpace.Local;
+            main.gravityModifier = 0f;
+
+            var emission = system.emission;
+            emission.rateOverTime = 24f;
+
+            var shape = system.shape;
+            shape.shapeType = ParticleSystemShapeType.Box;
+            shape.scale = new Vector3(GateRadius * 1.7f, GateRadius * 1.7f, 0.4f);
+
+            var velocity = system.velocityOverLifetime;
+            velocity.enabled = true;
+            velocity.space = ParticleSystemSimulationSpace.Local;
+            // Unity requires all three axes to share one curve mode; leaving x and y at
+            // their default constants next to a two-constant z logs a per-frame warning.
+            velocity.x = new ParticleSystem.MinMaxCurve(0f, 0f);
+            velocity.y = new ParticleSystem.MinMaxCurve(0f, 0f);
+            velocity.z = new ParticleSystem.MinMaxCurve(0.3f, 0.9f);
+
+            var noise = system.noise;
+            noise.enabled = true;
+            noise.strength = 0.45f;
+            noise.frequency = 0.7f;
+            noise.scrollSpeed = 0.35f;
+            noise.quality = ParticleSystemNoiseQuality.Medium;
+
+            AddParticleFade(system);
+            FinishParticleRenderer(system, "PortalMote", new Color(0.5f, 0.82f, 1f, 1f));
+
+            var embers = new GameObject("PortalEmbers");
+            embers.transform.SetParent(parent, false);
+            embers.transform.position = new Vector3(0f, 0.3f, GateZ + 14f);
+            embers.layer = layer;
+
+            var rising = embers.AddComponent<ParticleSystem>();
+            var emberMain = rising.main;
+            emberMain.loop = true;
+            emberMain.playOnAwake = true;
+            emberMain.duration = 7f;
+            emberMain.startLifetime = new ParticleSystem.MinMaxCurve(4f, 7f);
+            emberMain.startSpeed = new ParticleSystem.MinMaxCurve(0.15f, 0.5f);
+            emberMain.startSize = new ParticleSystem.MinMaxCurve(0.04f, 0.13f);
+            emberMain.startColor = new Color(0.4f, 0.78f, 1f, 0.85f);
+            emberMain.maxParticles = 90;
+            emberMain.simulationSpace = ParticleSystemSimulationSpace.Local;
+            emberMain.gravityModifier = -0.02f;
+
+            var emberEmission = rising.emission;
+            emberEmission.rateOverTime = 12f;
+
+            var emberShape = rising.shape;
+            emberShape.shapeType = ParticleSystemShapeType.Box;
+            emberShape.scale = new Vector3(22f, 0.2f, 10f);
+            // A box emits along its local +Z; tipping it onto its back points the spray at
+            // the sky, which is what "embers climbing off the wet street" actually needs.
+            emberShape.rotation = new Vector3(-90f, 0f, 0f);
+
+            var emberNoise = rising.noise;
+            emberNoise.enabled = true;
+            emberNoise.strength = 0.5f;
+            emberNoise.frequency = 0.5f;
+            emberNoise.scrollSpeed = 0.25f;
+
+            AddParticleFade(rising);
+            FinishParticleRenderer(rising, "PortalEmber", new Color(0.35f, 0.7f, 1f, 1f));
+        }
+
+        private static void AddParticleFade(ParticleSystem system)
+        {
+            var fade = system.colorOverLifetime;
+            fade.enabled = true;
+            var gradient = new Gradient();
+            gradient.SetKeys(
+                new[]
+                {
+                    new GradientColorKey(Color.white, 0f),
+                    new GradientColorKey(Color.white, 1f)
+                },
+                new[]
+                {
+                    new GradientAlphaKey(0f, 0f),
+                    new GradientAlphaKey(1f, 0.15f),
+                    new GradientAlphaKey(0f, 1f)
+                });
+            fade.color = gradient;
+        }
+
+        private static void FinishParticleRenderer(ParticleSystem system, string label, Color tint)
+        {
+            var renderer = system.GetComponent<ParticleSystemRenderer>();
+            renderer.sharedMaterial = ArtAssets.GetParticleMaterial(label, tint);
+            renderer.renderMode = ParticleSystemRenderMode.Billboard;
+            renderer.alignment = ParticleSystemRenderSpace.View;
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+        }
+
+        /// <summary>
+        /// Real light on the street around the gate. The original stage faked this with
+        /// sprites only; three shadowless points cost a fraction of one shadowed sun and
+        /// give the wet road and the operative's gear actual rim light.
+        /// </summary>
+        private static void BuildGateLights(Transform parent, int layer)
+        {
+            GateLight(parent, "GateLightLeft", new Vector3(-7.4f, 5.2f, GateZ + 3f),
+                7.5f, 24f, layer);
+            GateLight(parent, "GateLightRight", new Vector3(7.4f, 5.2f, GateZ + 3f),
+                7.5f, 24f, layer);
+            GateLight(parent, "GateLightCore", new Vector3(0f, GateY, GateZ + 2f),
+                4.5f, 30f, layer);
+            // Two cool fill lights down the avenue: the gate lit its own plaza, but the
+            // foreground where the operative stands stayed a navy silhouette.
+            GateLight(parent, "AvenueFillNear", new Vector3(-1.6f, 3.6f, -9f),
+                4.2f, 18f, layer);
+            GateLight(parent, "AvenueFillMid", new Vector3(1.8f, 3.4f, -22f),
+                3.6f, 20f, layer);
+        }
+
+        private static void GateLight(Transform parent, string name, Vector3 position,
+            float intensity, float range, int layer)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            go.transform.position = position;
+            go.layer = layer;
+
+            var light = go.AddComponent<Light>();
+            light.type = LightType.Point;
+            light.color = new Color(0.35f, 0.75f, 1f);
+            light.intensity = intensity;
+            light.range = range;
+            light.shadows = LightShadows.None;
+            light.renderMode = LightRenderMode.Auto;
         }
 
         /// <summary>A quad of any sprite, square to the menu camera's viewing axis.</summary>
@@ -619,7 +1017,7 @@ namespace NullFrontier.EditorTools
             probe.size = new Vector3(46f, 26f, 104f);
             probe.center = Vector3.zero;
             probe.boxProjection = true;
-            probe.intensity = 1f;
+            probe.intensity = 1.25f;
             probe.shadowDistance = 0f;
             probe.clearFlags = UnityEngine.Rendering.ReflectionProbeClearFlags.Skybox;
 
