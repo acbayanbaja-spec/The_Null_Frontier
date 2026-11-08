@@ -62,7 +62,14 @@ namespace NullFrontier.Characters
                 return;
             }
 
-            if (_visual != null) Destroy(_visual.gameObject);
+            if (_visual != null)
+            {
+                // Deactivate before Destroy: Destroy is deferred to the end of the frame,
+                // and an active old model keeps answering GetComponentInChildren, which
+                // made the rig cache the animator that was about to be destroyed.
+                _visual.gameObject.SetActive(false);
+                Destroy(_visual.gameObject);
+            }
             if (hideHostPrimitives) HideHostPrimitives();
 
             var instance = Instantiate(prefab, transform);

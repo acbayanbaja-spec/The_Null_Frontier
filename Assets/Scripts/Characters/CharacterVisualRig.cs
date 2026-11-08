@@ -76,7 +76,7 @@ namespace NullFrontier.Characters
             if (_dead) measuredSpeed = 0f;
             _smoothedSpeed = Mathf.SmoothDamp(_smoothedSpeed, measuredSpeed, ref _speedVelocity, speedSmoothTime);
 
-            if (_hasAnimator)
+            if (TryGetAnimator())
             {
                 animator.SetFloat("Speed", _smoothedSpeed);
                 animator.SetBool("Grounded", true);
@@ -94,7 +94,7 @@ namespace NullFrontier.Characters
         /// <summary>Calls the ranged/melee attack take on the current model.</summary>
         public void PlayAttack()
         {
-            if (!_hasAnimator || _dead) return;
+            if (!TryGetAnimator() || _dead) return;
             animator.SetTrigger("Shoot");
         }
 
@@ -108,11 +108,28 @@ namespace NullFrontier.Characters
         /// <summary>Re-caches renderers after a model is mounted underneath this rig.</summary>
         public void RefreshRenderers()
         {
-            if (animator == null) animator = GetComponentInChildren<Animator>();
+            // Unconditional: a remount must bind to the new model's animator instead of
+            // keeping a cached one that is pending destruction.
+            animator = GetComponentInChildren<Animator>();
             _hasAnimator = animator != null && animator.runtimeAnimatorController != null;
             _renderers = GetComponentsInChildren<Renderer>(true);
             _baseColors = null;
             _block = null;
+        }
+
+        /// <summary>
+        /// A destroyed animator still occupies the field and used to be driven every
+        /// frame. Re-acquire when a remount has replaced it; give up if the model is gone.
+        /// </summary>
+        private bool TryGetAnimator()
+        {
+            if (!_hasAnimator) return false;
+            if (animator == null)
+            {
+                animator = GetComponentInChildren<Animator>();
+                _hasAnimator = animator != null && animator.runtimeAnimatorController != null;
+            }
+            return _hasAnimator;
         }
 
         private void HandleDamaged(DamageInfo info)
@@ -129,7 +146,7 @@ namespace NullFrontier.Characters
             CombatEffects.Wound(where, info.Direction, severity,
                 biological ? Blood : Coolant);
 
-            if (!_hasAnimator) return;
+            if (!TryGetAnimator()) return;
             if (info.Amount >= 1f) animator.SetTrigger("Hit");
         }
 
@@ -142,7 +159,7 @@ namespace NullFrontier.Characters
             Vector3 centre = transform.position + Vector3.up * 0.95f;
             CombatEffects.Death(centre, biological ? Blood : Coolant, biological);
 
-            if (_hasAnimator)
+            if (TryGetAnimator())
             {
                 animator.SetFloat("Speed", 0f);
                 animator.SetTrigger("Die");

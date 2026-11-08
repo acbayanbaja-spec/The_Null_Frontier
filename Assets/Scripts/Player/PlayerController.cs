@@ -181,7 +181,16 @@ namespace NullFrontier.Player
             if (IsDodging)
             {
                 _dodgeTimer -= Time.deltaTime;
-                if (_dodgeTimer <= 0f) IsDodging = false;
+                if (_dodgeTimer <= 0f)
+                {
+                    IsDodging = false;
+                    return;
+                }
+
+                // HandleMovement returns early while dodging, so the dash has to be
+                // applied here; otherwise the move only burned stamina and granted
+                // i-frames without moving the body at all.
+                _controller.Move(_velocity * Time.deltaTime);
                 return;
             }
 

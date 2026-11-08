@@ -1,0 +1,94 @@
+20:21:46 === Stage 0 run start ===
+20:21:46 save present before run: True (backed up: True)
+20:21:46 playmode ExitingEditMode phase=1 step=0
+20:21:52 playmode EnteredPlayMode phase=1 step=0
+20:21:52 phase 1: main menu
+20:21:52 title buttons active: 12
+20:21:52   button 'Continue' label='CONTINUE' interactable=True persistent=0
+20:21:52   button 'Character' label='OPERATIVES' interactable=True persistent=1
+20:21:52   button 'Help' label='HELP' interactable=True persistent=1
+20:21:52   button 'NewGame' label='NEW GAME' interactable=True persistent=1
+20:21:52   button 'Settings' label='SETTINGS' interactable=True persistent=1
+20:21:52   button 'Badges' label='ACHIEVEMENTS' interactable=True persistent=1
+20:21:52   button 'Rewards' label='REWARDS' interactable=True persistent=1
+20:21:52   button 'Multiplayer' label='CO-OP' interactable=True persistent=0
+20:21:52   button 'Settings' label='SETTINGS' interactable=True persistent=1
+20:21:52   button 'Quit' label='QUIT' interactable=True persistent=1
+20:21:52   button 'Exit' label='EXIT' interactable=True persistent=1
+20:21:52   button 'Account' label='ACCOUNT' interactable=True persistent=1
+20:21:52 local save=True; continue interactable=True
+20:21:52 CHECK PASS menu.help :: top=Help
+20:21:53 CHECK PASS menu.credits :: top=Credits
+20:21:53 CHECK PASS credits.earthLicence :: 614 chars
+20:21:53 CHECK PASS credits.kenney :: attribution present
+20:21:53 CHECK PASS menu.return.title :: top=Title
+20:21:54 CHECK PASS menu.settings :: top=Settings
+20:21:54 CHECK PASS menu.settings.hex :: top=Settings
+20:21:55 CHECK PASS menu.coop :: top=Multiplayer
+20:21:55 CHECK PASS menu.account :: top=Account
+20:21:56 CHECK PASS menu.rewards :: top=Rewards
+20:21:56 CHECK PASS menu.badges :: top=Badges
+20:21:57 CHECK PASS menu.operatives :: top=CharacterSelect
+20:21:57 CHECK PASS roster.count :: 5 cards
+20:21:57 CHECK PASS roster.John Steve :: igris
+20:21:57 CHECK PASS roster.Angel :: andi
+20:21:57 CHECK PASS roster.Joyce :: joy
+20:21:57 CHECK PASS roster.Jessel Mae :: ursula
+20:21:57 CHECK PASS roster.Jahred :: iidreuspade
+20:21:57 CHECK PASS roster.allFive :: igris,andi,joy,ursula,iidreuspade
+20:21:57 CHECK PASS roster.confirm :: interactable=True
+20:21:58 CHECK PASS menu.return.title.2 :: top=Title
+20:21:58 CHECK PASS newgame.roster :: top=CharacterSelect
+20:21:58 CHECK PASS newgame.save :: HasLocalSave=True
+20:21:58 CHECK PASS newgame.card :: John Steve
+20:21:59 CHECK PASS newgame.deployReady :: interactable=True
+20:21:59 deploy clicked; waiting for VerticalCity
+20:21:59 phase 2: city
+20:21:59 CHECK PASS deploy.character :: SelectedCharacterId=igris
+20:21:59 loadout index=1 weapon=HitscanWeapon ammo=32
+20:21:59 teleported player onto cache approach at (-11.70, 1.15, 39.00) (setup for the walk-in)
+20:22:00 CHECK PASS pickup.prompt :: NearbyPrompt=TAKE DATA CACHE
+20:22:00 CHECK PASS pickup.collect :: data_cache 0 -> 1 via E on world cache
+20:22:00 teleported player back to the city spawn line
+20:22:01 CHECK PASS movement.forward :: moved from (0.00, 0.98, 0.00) to (0.00, 0.98, 2.01)
+20:22:01 CHECK PASS camera.look :: yaw 0.0 -> 4.8
+20:22:01 CHECK PASS movement.jump :: y 0.98 -> 1.83, grounded=False
+20:22:02 CHECK PASS movement.dodge :: IsDodging=True, dash=1.31 m
+20:22:03 applied 12 ballistic damage through Health.TakeDamage (no enemy in range guaranteed)
+20:22:03 CHECK PASS health.damage :: health 150/0 shield -> 138/0, total 150 -> 138
+20:22:03 granted 15 XP through ProgressionSystem for the save/continue check
+20:22:03 CHECK PASS inventory.saved :: C:/Users/angel/AppData/LocalLow/NullFrontier/NULL FRONTIER\nullfrontier_save.json contains data_cache
+20:22:03 CHECK PASS weapon.switch :: index 1 -> 2, active=True
+20:22:04 CHECK PASS weapon.fire :: ammo 24 -> 20
+20:22:05 CHECK PASS weapon.fireReleased :: ammo 20 -> 20 once the trigger was released
+20:22:05 CHECK PASS weapon.reload.start :: IsReloading=True
+20:22:08 CHECK PASS weapon.reload.complete :: ammo 24/24, reloading=False
+20:22:08 captured C:\Users\angel\AppData\Local\Temp\nf_stage0_city.png
+20:22:09 CHECK PASS pause.open :: screen=top=Pause timescale=0
+20:22:09 save & quit clicked; returning to menu
+20:22:11 CHECK PASS return.saveLoaded :: HasLocalSave=True, data_cache=1, expected=1
+20:22:11 CHECK PASS return.progression :: level=1/1 xp=15/15
+20:22:11 CHECK PASS return.continueEnabled :: interactable=True
+20:22:11 captured C:\Users\angel\AppData\Local\Temp\nf_stage0_menu_after_quit.png
+20:22:11 continue clicked
+20:22:12 phase 4: continued city
+20:22:12 CHECK PASS continue.inventory :: data_cache=1
+20:22:12 CHECK PASS continue.character :: SelectedCharacterId=igris
+20:22:12 CHECK PASS continue.progression :: level=1/1 xp=15/15
+20:22:12 captured C:\Users\angel\AppData\Local\Temp\nf_stage0_continue.png
+20:22:14 CHECK PASS continue.pause :: top=Pause
+20:22:14 continue pause quit clicked; going to the credits page for final evidence
+20:22:15 CHECK PASS menu.helpFinal :: top=Help
+20:22:16 CHECK PASS credits.final :: top=Credits
+20:22:16 CHECK PASS credits.earthLicence :: 614 chars
+20:22:16 CHECK PASS credits.kenney :: attribution present
+20:22:17 captured C:\Users\angel\AppData\Local\Temp\nf_stage0_credits_final.png
+20:22:18 SUMMARY pass=51 fail=0
+20:22:18 playmode ExitingPlayMode phase=5 step=4
+20:22:18 playmode EnteredEditMode phase=5 step=4
+20:22:18 play exited at phase=5 step=4 pass=51 fail=0
+20:22:18 console errors during run: none
+20:22:18 save restored to pre-run state
+20:22:18 SUMMARY pass=51 fail=0
+20:22:18 android device: NOT TESTED
+20:22:18 === Stage 0 run complete ===
