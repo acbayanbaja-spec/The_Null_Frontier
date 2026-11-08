@@ -2,9 +2,11 @@
 
 Third-person 3D open-world science-fiction survival adventure for Android, built on Unity 6 (URP) with a Node.js/Express/Supabase backend for accounts, cloud saves, and leaderboards.
 
-> **Status: functional greybox scaffold.** All core systems are implemented in code and
-> scenes are generator-built placeholder environments. Characters/environments are primitive
-> greybox shapes — production 3D art is the main remaining content task.
+> **Status: playable prototype with a developed main menu.** Scenes are generator-built and
+> use licensed low-poly art (Kenney, Quaternius); the Earth maps are Solar System Scope
+> CC BY 4.0. The menu has been verified in editor Play mode. Gameplay, Android builds and
+> performance have not been verified on a physical device. Online co-op is not implemented.
+> See `Docs/TECHNICAL_AUDIT.md` and `Docs/ROADMAP.md`.
 
 ## 1. Project architecture
 
@@ -16,7 +18,7 @@ Null_Frontier_app/
 │   └── Scripts/
 │       ├── Core/               # GameManager, SaveSystem, BackendClient, SceneLoader,
 │       │                       # Health, IDamageable/DamageInfo, ObjectPool, GameEvents
-│       ├── Characters/         # CharacterDefinition + CharacterRegistry (6 roster members)
+│       ├── Characters/         # CharacterDefinition + CharacterRegistry (5 canon operatives)
 │       ├── Player/             # PlayerController, camera rig, stamina, input providers
 │       │                       # (desktop + mobile), PlayerCharacter (death/respawn)
 │       ├── Combat/             # Weapon definitions, hitscan/projectile/melee weapons,
@@ -63,8 +65,10 @@ Install Unity with the **Android Build Support** module (includes SDK/NDK).
 
 ## 3. Features implemented
 
-- Main menu flow: title, new game, continue (disabled without save), settings, multiplayer gate
-- Character selection from the 6-member roster with per-character stats and abilities
+- Main menu flow: title, new game, continue (disabled without save), settings, credits,
+  help, and an honest co-op status page
+- Character selection from the 5 canon operatives (Jahred/iidreuspade, Angel/andi,
+  John Steve/igris, Joyce/joy, Jessel Mae/ursula) with per-character stats and abilities
 - Third-person controller: walk/run/sprint (stamina), jump, crouch, dodge with i-frames
 - Cinemachine third-person camera with aim FOV
 - Mobile controls: floating joystick, touch buttons, right-half camera drag
@@ -81,12 +85,14 @@ Install Unity with the **Android Build Support** module (includes SDK/NDK).
 
 ## 4. Features still pending
 
-- **All production art**: realistic character models, animations, environments, VFX, audio
-  (current visuals are labelled greybox primitives)
+- **All production art**: realistic character models, animations, environments, VFX
+  (current visuals are licensed low-poly assets, not photoreal)
+- Christian Loyd as an implemented antagonist/boss (only the canon identity is recorded;
+  there is no boss encounter yet)
+- Online co-op, matchmaking, lobby and social systems (no netcode in the client)
 - Boss encounters (boss framework not written)
 - Regions B–E content production (Shifting Maze mechanics exist; Forest/Abandoned/Core scenes not built)
 - Character customization studio (roster/select exists; customization UI not built)
-- Multiplayer beyond accounts/saves/leaderboards (no Netcode/Photon integration yet)
 - Friends/chat/party social features (DB tables exist, routes/UI pending)
 - World map UI and fast travel
 - Daily/weekly missions
@@ -107,17 +113,25 @@ Install Unity with the **Android Build Support** module (includes SDK/NDK).
 | Invalid bearer token | PASS — `401 {"error":"unauthorized"}` |
 | Wrong password (stub creds) | PASS — `401 {"error":"invalid_credentials"}` |
 
-**Unity client: NOT YET COMPILED.** No Unity Editor was present when the code was written;
-first compile happens on project open (see Known issues). Scene generation, URP bootstrap,
-and APK build are scripted but must be executed inside the Editor.
+**Unity client (2026-11-08):**
+
+| Test | Result |
+|---|---|
+| Offline Roslyn compile gate (`Temp/nfcheck/check.sh`) | PASS — runtime + editor assemblies |
+| Scene rebuild (`SceneBuilder.BuildAll`) | PASS — MainMenu and VerticalCity written |
+| Main menu in Play mode (editor, 1380×610) | PASS — portal, Earth, UI and character render; runtime log clean |
+| Gameplay, all menus, save/continue, Android APK | NOT TESTED this session |
+| Physical Android device (performance, touch, thermals) | NEVER TESTED |
 
 ## 6. Known issues
 
-- C# has not passed a compiler yet — expect a small number of fix-on-first-open errors.
-- Greybox scenes: enemies/weapons need prefab wiring in the Editor (prefab references are
-  serialized and null-safe until assigned).
+- Android has not been built from the current commit or run on a device. Do not treat the
+  quality tiers or touch layout as validated.
+- The visual target is not met: characters and environments are low-poly licensed art.
+- Online co-op is not implemented; the CO-OP page says so.
+- Cloud saves are upload-only with a single slot; download/merge is not implemented.
 - Skill ranks are runtime-only (skill points persist; ranks do not).
-- `shieldBonus` item stat is seeded but unused until a shield-max system lands.
+- `shieldBonus`/`DefenseMultiplier` are not applied in combat yet.
 - Drone hover assumes NavMesh bake accommodates flying units.
 - `DigitalSoldier` cover search needs objects tagged `CoverPoint` (tag added to TagManager).
 
@@ -167,5 +181,6 @@ Debug keystore is used automatically — configure a real keystore
 2. Build Command `npm install`, Start Command `npm start`.
 3. Env vars: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `CORS_ORIGIN` (`*` is acceptable —
    auth is Bearer-based). `PORT` is injected by Render.
-4. Verify `https://<app>.onrender.com/api/health`, then point the client's
-   `BackendClient.apiBaseUrl` at it.
+4. Verify `https://<app>.onrender.com/api/health`, then set `BackendClient.apiBaseUrl`
+   to that HTTPS URL on the backend object and rebuild the scenes. The shipped default is
+   empty (offline), and devices reject loopback/cleartext endpoints.

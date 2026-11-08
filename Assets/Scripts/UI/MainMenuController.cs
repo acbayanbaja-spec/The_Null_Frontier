@@ -45,8 +45,9 @@ namespace NullFrontier.UI
             }
             if (multiplayerButton != null)
             {
-                bool online = BackendClient.Instance != null && BackendClient.Instance.IsAuthenticated;
-                multiplayerButton.interactable = online;
+                // The page reports that co-op is unavailable; it must not be gated on a
+                // REST sign-in, which is not a multiplayer session.
+                multiplayerButton.interactable = true;
                 multiplayerButton.onClick.AddListener(() => ScreenManager.Instance?.Show(multiplayerScreen));
             }
 

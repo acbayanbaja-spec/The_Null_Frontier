@@ -45,6 +45,12 @@ namespace NullFrontier.UI
                 return;
             }
 
+            if (!client.IsConfigured)
+            {
+                SetStatus("Online services are not configured in this build.");
+                return;
+            }
+
             SetStatus("Connecting...");
             if (isSignUp) client.SignUp(email, password, usernameInput != null ? usernameInput.text.Trim() : null);
             else client.SignIn(email, password);

@@ -10152,7 +10152,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 68136fb6b9e3bf94eb5df5503a6549b3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  apiBaseUrl: http://localhost:3000/api
+  apiBaseUrl: ""
   requestTimeoutSeconds: 15
 --- !u!114 &465563656
 MonoBehaviour:

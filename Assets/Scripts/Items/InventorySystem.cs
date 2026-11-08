@@ -47,6 +47,19 @@ namespace NullFrontier.Items
             LoadFromSave();
         }
 
+        private void OnEnable()
+        {
+            // Awake runs before SaveSystem has read the file, so hydrate again once a
+            // save actually lands. Without this the menu shows an empty kit tray and
+            // the next Commit writes the emptiness back to disk.
+            GameEvents.SaveLoaded += LoadFromSave;
+        }
+
+        private void OnDisable()
+        {
+            GameEvents.SaveLoaded -= LoadFromSave;
+        }
+
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;

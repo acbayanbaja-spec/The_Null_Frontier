@@ -116,7 +116,7 @@ namespace NullFrontier.UI
                 if (row.Plate != null && !isUnlocked) row.Plate.color = DisabledPlate;
 
                 // Each operative owns one colour and the tile edge carries it, so the roster
-                // reads as six identities instead of six copies of the same plate.
+                // reads as distinct identities instead of copies of the same plate.
                 if (row.Rim != null)
                     row.Rim.color = new Color(def.AccentColor.r, def.AccentColor.g,
                         def.AccentColor.b, isUnlocked ? 0.8f : 0.32f);
@@ -187,7 +187,7 @@ namespace NullFrontier.UI
         }
 
         // Meter lengths are relative to the roster, not to a made-up cap: 1.0 means
-        // "highest of the six", which is what a comparison bar actually promises.
+        // "highest of the roster", which is what a comparison bar actually promises.
         private static float Norm(float value, float floor, float ceiling)
             => ceiling > floor ? Mathf.Clamp01((value - floor) / (ceiling - floor)) : 0.5f;
 

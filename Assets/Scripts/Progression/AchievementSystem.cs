@@ -98,13 +98,6 @@ namespace NullFrontier.Progression
             },
             new AchievementDefinition
             {
-                id = "networked", title = "NETWORKED",
-                blurb = "Run a co-op match.",
-                metric = AchievementMetric.CoOpMatches, target = 1,
-                rewardItemId = "med_gel", rewardQuantity = 2
-            },
-            new AchievementDefinition
-            {
                 id = "coming_back", title = "COMING BACK",
                 blurb = "Return from the respawn point 3 times.",
                 metric = AchievementMetric.RescuesReturned, target = 3,

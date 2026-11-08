@@ -1,0 +1,45 @@
+NULL FRONTIER - THIRD-PARTY NOTICES
+=====================================
+
+NULL FRONTIER is an original project. Its characters, world and story are
+original work. The third-party art below is used under the licences stated.
+The full provenance record, including archive URLs, lives in
+Assets/Art/CREDITS.txt in the source repository.
+
+KENNEY - CITY KIT ROADS 2.2
+  Author   Kenney (www.kenney.nl)
+  Licence  CC0 1.0 Universal
+           https://creativecommons.org/publicdomain/zero/1.0/
+  Used for road tiles, streetlights, traffic lights, barriers, cones, signs,
+  electricity poles, dumpsters and bridge pieces.
+
+KENNEY - CITY KIT INDUSTRIAL 2.0
+  Author   Kenney (www.kenney.nl)
+  Licence  CC0 1.0 Universal
+  Used for buildings, chimneys, tanks, shipping containers, windmills, solar
+  panels and the water tower.
+
+QUATERNIUS - ULTIMATE ANIMATED CHARACTER PACK (2019)
+  Author   Quaternius (quaternius.com)
+  Licence  CC0 1.0 Universal
+  Used for the six rigged and animated humanoid characters. The downloaded
+  archive contains no licence file; the author publishes the library under
+  CC0 on quaternius.com.
+
+SOLAR SYSTEM SCOPE - EARTH AND CLOUD MAPS
+  Author   Solar System Scope (www.solarsystemscope.com)
+  Licence  CC BY 4.0
+           https://creativecommons.org/licenses/by/4.0/
+  Attribution: "Earth texture by Solar System Scope, CC BY 4.0".
+  Used for the planet seen through the menu gate: the day albedo
+  (Earth_Day.jpg) and the cloud shell (Earth_Clouds.jpg). Both are 2:1
+  equirectangular maps built from NASA Visible Earth / Blue Marble imagery
+  and re-published by Solar System Scope.
+
+AUDIO
+  All music and sound effects are original procedural audio synthesized at
+  runtime. No third-party recordings are included.
+
+ENGINE
+  Unity 6000.0.85f2 with the Universal Render Pipeline 17.0.4.
+  Unity is a trademark of Unity Technologies.

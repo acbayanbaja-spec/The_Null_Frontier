@@ -34,7 +34,9 @@ namespace NullFrontier.EditorTools
         private const string VolumePath = ScenesDir + "/NullFrontier_Volume.asset";
         private const string DayVolumePath = ScenesDir + "/NullFrontier_Volume_Day.asset";
         private const string NavMeshPath = ScenesDir + "/VerticalCity_NavMesh.asset";
-        private const string ApiBaseUrl = "http://localhost:3000/api";
+        // Production-safe default: nothing baked into the scenes. Set a deployed HTTPS
+        // endpoint on BackendClient for online features; localhost must never ship.
+        private const string ApiBaseUrl = "";
 
         private const string MainMenuScene = "MainMenu";
         private const string CityScene = "VerticalCity";
@@ -1013,6 +1015,9 @@ namespace NullFrontier.EditorTools
 
             var help = Page(screens, "Help");
             UiFactory.BuildHelpScreen(help.transform, "Title");
+
+            var credits = Page(screens, "Credits");
+            UiFactory.BuildCreditsScreen(credits.transform, "Help");
         }
 
         private static void CreateTouchControls()
@@ -1038,8 +1043,11 @@ namespace NullFrontier.EditorTools
             UiFactory.SetField(provider, "dodgeButton", UiFactory.SkillKey("Dodge", canvas.transform,
                 "DODGE", null, new Vector2(-300f, 350f), new Vector2(150f, 150f), UiFactory.Accent,
                 null, UiFactory.Icon.Chevron));
+            UiFactory.SetField(provider, "switchButton", UiFactory.SkillKey("Switch", canvas.transform,
+                "SWAP", null, new Vector2(-190f, 380f), new Vector2(110f, 110f), UiFactory.Subtle,
+                null, UiFactory.Icon.Chevron));
             UiFactory.SetField(provider, "jumpButton", UiFactory.SkillKey("Jump", canvas.transform,
-                "JUMP", null, new Vector2(-110f, 400f), new Vector2(150f, 150f), UiFactory.Accent,
+                "JUMP", null, new Vector2(-30f, 430f), new Vector2(150f, 150f), UiFactory.Accent,
                 null, UiFactory.Icon.Jump));
             UiFactory.SetField(provider, "aimButton", UiFactory.SkillKey("Aim", canvas.transform,
                 "AIM", "HOLD", new Vector2(-560f, 300f), new Vector2(140f, 140f), UiFactory.Accent,

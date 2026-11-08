@@ -24,11 +24,9 @@ namespace NullFrontier.EditorTools
 
         private static void EnsureConfigured()
         {
-            if (GraphicsSettings.defaultRenderPipeline != null)
-            {
-                return;
-            }
-
+            // Repair path: a renderer created by CreateInstance has no PostProcessData, and
+            // URP silently skips post-processing when it is null. This must run even when a
+            // pipeline is already assigned, so existing projects get repaired too.
             var rendererData = AssetDatabase.LoadAssetAtPath<UniversalRendererData>(RendererDataPath);
             if (rendererData == null)
             {
@@ -36,6 +34,7 @@ namespace NullFrontier.EditorTools
                 rendererData = ScriptableObject.CreateInstance<UniversalRendererData>();
                 AssetDatabase.CreateAsset(rendererData, RendererDataPath);
             }
+            AssignPostProcessData(rendererData);
 
             var pipelineAsset = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>(PipelineAssetPath);
             if (pipelineAsset == null)
@@ -49,7 +48,27 @@ namespace NullFrontier.EditorTools
             BuildQualityTiers(pipelineAsset);
 
             AssetDatabase.SaveAssets();
-            Debug.Log("[NullFrontier] URP pipeline and quality tiers configured.");
+            Debug.Log("[NullFrontier] URP pipeline, post resources and quality tiers configured.");
+        }
+
+        private static void AssignPostProcessData(UniversalRendererData rendererData)
+        {
+            const string path =
+                "Packages/com.unity.render-pipelines.universal/Runtime/Data/PostProcessData.asset";
+            var data = AssetDatabase.LoadAssetAtPath<PostProcessData>(path);
+            if (data == null)
+            {
+                Debug.LogWarning("[NullFrontier] URP PostProcessData asset not found.");
+                return;
+            }
+
+            var serialized = new SerializedObject(rendererData);
+            SerializedProperty property = serialized.FindProperty("postProcessData");
+            if (property == null || property.objectReferenceValue == data) return;
+
+            property.objectReferenceValue = data;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(rendererData);
         }
 
         private static void BuildQualityTiers(UniversalRenderPipelineAsset baseAsset)
@@ -58,10 +77,12 @@ namespace NullFrontier.EditorTools
             // creating them. Every level gets its own URP asset, because render scale and
             // shadows live on the pipeline asset rather than on QualitySettings.
             string[] levels = QualitySettings.names;
+            int activeLevel = QualitySettings.GetQualityLevel();
             for (int i = 0; i < levels.Length; i++)
             {
                 float fraction = levels.Length > 1 ? (float)i / (levels.Length - 1) : 1f;
                 UniversalRenderPipelineAsset tier = GetOrCreateTierAsset(baseAsset, i);
+                if (tier == null) continue;
 
                 tier.renderScale = Mathf.Lerp(0.6f, 1f, fraction);
                 tier.shadowDistance = baseAsset.shadowDistance * Mathf.Lerp(0.4f, 1f, fraction);
@@ -72,11 +93,16 @@ namespace NullFrontier.EditorTools
                 serialized.FindProperty("m_MainLightShadowsSupported").boolValue = fraction >= 0.2f;
                 serialized.FindProperty("m_SoftShadowsSupported").boolValue = fraction >= 0.6f;
                 serialized.ApplyModifiedPropertiesWithoutUndo();
+                EditorUtility.SetDirty(tier);
 
-                QualitySettings.SetQualityLevel(i, true);
+                QualitySettings.SetQualityLevel(i, false);
                 QualitySettings.renderPipeline = tier;
                 QualitySettings.vSyncCount = 0; // target frame rate is driven by Application.targetFrameRate
             }
+
+            // Leave the user's tier selected; the loop above only needs each slot active
+            // long enough for QualitySettings to record its pipeline.
+            QualitySettings.SetQualityLevel(activeLevel, false);
         }
 
         private static UniversalRenderPipelineAsset GetOrCreateTierAsset(UniversalRenderPipelineAsset baseAsset, int index)

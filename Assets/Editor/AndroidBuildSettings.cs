@@ -1,3 +1,4 @@
+using System.IO;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
@@ -18,7 +19,7 @@ namespace NullFrontier.EditorTools
         [MenuItem("Null Frontier/Build/Android APK")]
         public static void BuildApk()
         {
-            if (!EnsureAndroidTarget()) return;
+            if (!ValidateForBuild() || !EnsureAndroidTarget()) return;
             Configure();
             var report = BuildPipeline.BuildPlayer(GetScenes(), ApkOutput, BuildTarget.Android, BuildOptions.None);
             LogReport(report, ApkOutput);
@@ -27,8 +28,10 @@ namespace NullFrontier.EditorTools
         [MenuItem("Null Frontier/Build/Android AAB")]
         public static void BuildAab()
         {
-            if (!EnsureAndroidTarget()) return;
+            if (!ValidateForBuild() || !EnsureAndroidTarget()) return;
             Configure();
+            Debug.LogWarning("[NullFrontier] This AAB is debug-signed. Configure a release " +
+                             "keystore before uploading it to a store.");
             EditorUserBuildSettings.buildAppBundle = true;
             var report = BuildPipeline.BuildPlayer(GetScenes(), AabOutput, BuildTarget.Android, BuildOptions.None);
             EditorUserBuildSettings.buildAppBundle = false;
@@ -53,6 +56,41 @@ namespace NullFrontier.EditorTools
             PlayerSettings.Android.useCustomKeystore = false; // debug keystore; set before store release
 
             PlayerSettings.SetManagedStrippingLevel(NamedBuildTarget.Android, ManagedStrippingLevel.Low);
+        }
+
+        /// <summary>
+        /// Blocks a device build that would ship a loopback endpoint or omit the CC BY
+        /// attribution. These are configuration errors, not warnings.
+        /// </summary>
+        private static bool ValidateForBuild()
+        {
+            bool ok = true;
+            if (!File.Exists("Assets/StreamingAssets/CREDITS.txt"))
+            {
+                Debug.LogError("[NullFrontier] Build blocked: StreamingAssets/CREDITS.txt is missing; " +
+                               "the Earth texture attribution must ship with the app.");
+                ok = false;
+            }
+
+            foreach (var scene in EditorBuildSettings.scenes)
+            {
+                if (!scene.enabled || !File.Exists(scene.path)) continue;
+                string text = File.ReadAllText(scene.path);
+                if (text.Contains("localhost:3000"))
+                {
+                    Debug.LogError($"[NullFrontier] Build blocked: {scene.path} contains a " +
+                                   "localhost backend endpoint. Rebuild the scene from SceneBuilder.");
+                    ok = false;
+                }
+                if (text.Contains("apiBaseUrl: http://"))
+                {
+                    Debug.LogError($"[NullFrontier] Build blocked: {scene.path} uses a cleartext " +
+                                   "backend URL. Devices require HTTPS.");
+                    ok = false;
+                }
+            }
+
+            return ok;
         }
 
         private static string[] GetScenes()

@@ -27,6 +27,7 @@ namespace NullFrontier.Player
         [SerializeField] private TouchButton interactButton;
         [SerializeField] private TouchButton abilityButton;
         [SerializeField] private TouchButton dodgeButton;
+        [SerializeField] private TouchButton switchButton;
 
         [Header("Look")]
         [SerializeField] private float lookSensitivity = 0.4f;
@@ -67,6 +68,7 @@ namespace NullFrontier.Player
             state.InteractPressed |= ConsumePressed(interactButton);
             state.ReloadPressed |= ConsumePressed(reloadButton);
             state.AbilityPressed |= ConsumePressed(abilityButton);
+            state.WeaponSwitchPressed |= ConsumePressed(switchButton);
 
             state.SprintHeld |= Held(sprintButton);
             state.CrouchHeld |= Held(crouchButton);

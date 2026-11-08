@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using NullFrontier.Characters;
 using UnityEngine;
 
 namespace NullFrontier.Core
@@ -24,7 +25,10 @@ namespace NullFrontier.Core
             public int level = 1;
             public long xp;
             public int skillPoints;
-            public List<string> unlockedCharacters = new() { "iidreuspade" };
+            public List<string> unlockedCharacters = new()
+            {
+                "iidreuspade", "andi", "igris", "joy", "ursula"
+            };
             public List<string> unlockedRegions = new() { "vertical_city" };
             public List<string> completedMissions = new();
             public List<InventoryEntry> inventory = new();
@@ -85,7 +89,10 @@ namespace NullFrontier.Core
         public void StartNewSave()
         {
             Data = new SaveData();
-            SaveNow();
+            // Write locally without uploading: a blank run must never replace the only
+            // cloud copy before the player has a chance to sync it.
+            SaveNow(uploadCloud: false);
+            GameEvents.RaiseSaveLoaded();
         }
 
         private static string SavePath => Path.Combine(Application.persistentDataPath, "nullfrontier_save.json");
@@ -128,6 +135,7 @@ namespace NullFrontier.Core
             if (!HasLocalSave)
             {
                 Data = new SaveData();
+                AfterLoad();
                 return;
             }
 
@@ -141,6 +149,7 @@ namespace NullFrontier.Core
                     Debug.LogWarning("[SaveSystem] Save file invalid; keeping defaults.");
                     BackupCorruptSave();
                     Data = new SaveData();
+                    AfterLoad();
                     return;
                 }
                 Data = loaded;
@@ -151,6 +160,23 @@ namespace NullFrontier.Core
                 BackupCorruptSave();
                 Data = new SaveData();
             }
+
+            AfterLoad();
+        }
+
+        private void AfterLoad()
+        {
+            // Saves written before the full roster was unlocked contain only the
+            // protagonist. There is no unlock mechanic, so union the canon ids in.
+            Data.unlockedCharacters ??= new List<string>();
+            foreach (string id in CharacterRegistry.CanonIds)
+            {
+                if (!Data.unlockedCharacters.Contains(id)) Data.unlockedCharacters.Add(id);
+            }
+
+            // Systems that hydrate from Data (inventory, kit tray) listen for this
+            // instead of reading Data in Awake, before the file has been loaded.
+            GameEvents.RaiseSaveLoaded();
         }
 
         public void QueueSave()
@@ -158,13 +184,15 @@ namespace NullFrontier.Core
             _pendingSaveTimer = SaveDebounceSeconds;
         }
 
-        public void SaveNow()
+        public void SaveNow() => SaveNow(uploadCloud: true);
+
+        private void SaveNow(bool uploadCloud)
         {
             _pendingSaveTimer = -1f;
-            WriteSave();
+            WriteSave(uploadCloud);
         }
 
-        private void WriteSave()
+        private void WriteSave(bool uploadCloud = true)
         {
             Data.lastSavedUtcTicks = DateTime.UtcNow.Ticks;
             try
@@ -180,7 +208,7 @@ namespace NullFrontier.Core
                 Debug.LogError($"[SaveSystem] Save failed: {e.Message}");
             }
 
-            BackendClient.Instance?.UploadCloudSave(Data);
+            if (uploadCloud) BackendClient.Instance?.UploadCloudSave(Data);
         }
 
         private void BackupCorruptSave()

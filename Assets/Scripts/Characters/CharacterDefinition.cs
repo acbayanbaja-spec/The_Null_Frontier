@@ -7,9 +7,8 @@ namespace NullFrontier.Characters
     /// Immutable character definition. The roster is defined in code (not asset files)
     /// so it works without any imported art; swap in modelPrefab/avatar references as
     /// production assets arrive. Character identities come from the established roster:
-    /// Jahred (iidreuspade), Angel (andi), John Steve (igris), Joyce (joy),
-    /// Jessel Mae (ursula). A sixth roster slot did not exist in any prior project
-    /// files (the workspace was empty), so "Vince (vanta)" is an original addition.
+    /// Jahred (iidreuspade), Angel (andi), John Steve (igris), Joyce (joy) and
+    /// Jessel Mae (ursula). Christian Loyd is the antagonist and is not a playable row.
     /// </summary>
     public class CharacterDefinition
     {
@@ -73,9 +72,15 @@ namespace NullFrontier.Characters
             new("ursula", "Jessel Mae", "Technomancer", "emp_pulse",
                 "Weaponizes the Frontier itself. Abilities disrupt enemy systems.", 95f, 100f, 40f, 5.0f, 1.05f, 1.0f,
                 new Color(0.7f, 0.4f, 1f), "Witch"),
-            new("vanta", "Vince", "Reaper", "temp_overdrive",
-                "Close-range specialist. Original sixth roster member.", 100f, 110f, 25f, 5.4f, 1.2f, 0.95f,
-                new Color(0.9f, 0.15f, 0.2f), "Ninja_Male"),
+        };
+
+        /// <summary>
+        /// Every operative the player owns from the start. Used by save migration so an
+        /// existing save written before the roster was unlocked gains the missing five.
+        /// </summary>
+        public static readonly IReadOnlyList<string> CanonIds = new List<string>
+        {
+            "iidreuspade", "andi", "igris", "joy", "ursula"
         };
 
         public static CharacterDefinition Get(string id)

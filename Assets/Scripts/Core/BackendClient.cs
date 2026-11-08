@@ -15,11 +15,32 @@ namespace NullFrontier.Core
     {
         public static BackendClient Instance { get; private set; }
 
-        [SerializeField] private string apiBaseUrl = "http://localhost:3000/api";
+        // No endpoint is baked in. A phone must never point at localhost, and shipping a
+        // placeholder host would be worse than shipping no online services at all.
+        [SerializeField] private string apiBaseUrl = "";
         [SerializeField] private float requestTimeoutSeconds = 15f;
 
         public string AuthToken { get; private set; }
-        public bool IsAuthenticated => !string.IsNullOrEmpty(AuthToken);
+        public bool IsAuthenticated => !string.IsNullOrEmpty(AuthToken) && IsConfigured;
+
+        /// <summary>
+        /// True when a usable endpoint is set. Devices require HTTPS; the editor may also
+        /// use a loopback HTTP server for local development.
+        /// </summary>
+        public bool IsConfigured
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(apiBaseUrl) ||
+                    !Uri.TryCreate(apiBaseUrl, UriKind.Absolute, out var uri)) return false;
+                if (uri.Scheme == Uri.UriSchemeHttps) return true;
+#if UNITY_EDITOR
+                return uri.Scheme == Uri.UriSchemeHttp && uri.IsLoopback;
+#else
+                return false;
+#endif
+            }
+        }
 
         public event Action<bool, string> OnAuthResult;
 
@@ -34,18 +55,32 @@ namespace NullFrontier.Core
             DontDestroyOnLoad(gameObject);
         }
 
-        public void SetApiBaseUrl(string url) => apiBaseUrl = url.TrimEnd('/');
+        public void SetApiBaseUrl(string url) => apiBaseUrl = (url ?? string.Empty).TrimEnd('/');
 
         public void SetAuthToken(string token) => AuthToken = token;
 
-        public void SignUp(string email, string password, string username) =>
+        public void SignUp(string email, string password, string username)
+        {
+            if (!RequireEndpoint()) return;
             StartCoroutine(AuthRoutine("/auth/signup", email, password, username));
+        }
 
-        public void SignIn(string email, string password) =>
+        public void SignIn(string email, string password)
+        {
+            if (!RequireEndpoint()) return;
             StartCoroutine(AuthRoutine("/auth/signin", email, password, null));
+        }
+
+        private bool RequireEndpoint()
+        {
+            if (IsConfigured) return true;
+            OnAuthResult?.Invoke(false, "Online services are not configured in this build.");
+            return false;
+        }
 
         private IEnumerator AuthRoutine(string endpoint, string email, string password, string username)
         {
+            if (!IsConfigured) yield break;
             var payload = new SignupRequest { email = email, password = password, username = username };
             byte[] body = Encoding.UTF8.GetBytes(JsonUtility.ToJson(payload));
 
@@ -95,6 +130,11 @@ namespace NullFrontier.Core
 
         private IEnumerator AuthorizedRoutine(string endpoint, string verb, string json, Action<bool, string> onComplete)
         {
+            if (!IsConfigured)
+            {
+                onComplete?.Invoke(false, "Online services are not configured in this build.");
+                yield break;
+            }
             using var request = new UnityWebRequest(apiBaseUrl + endpoint, verb);
             if (json != null)
             {

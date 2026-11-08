@@ -1937,7 +1937,7 @@ namespace NullFrontier.EditorTools
             Center(headingRule.rectTransform, new Vector2(0f, 396f));
             headingRule.rectTransform.sizeDelta = new Vector2(320f, 2f);
 
-            // Six operatives, so the roster is a fixed grid: a scroll view here only
+            // Five operatives, so the roster is a fixed grid: a scroll view here only
             // steals drags from the turntable behind it.
             var content = RosterGrid(page);
             Center(content, new Vector2(-654f, -12f));
@@ -2255,10 +2255,44 @@ namespace NullFrontier.EditorTools
             HelpLine(page, 620f, 1, Icon.Med, "The kit tray counts MED GEL, SHIELD CELL and STIM you carry");
             HelpLine(page, 620f, 2, Icon.Gear, "PAUSE opens CONTRACTS and SUPPLY [Escape]");
             HelpLine(page, 620f, 3, Icon.Trophy, "Badges on the title screen pay out supplies to claim");
-            HelpLine(page, 620f, 4, Icon.Cloud, "CO-OP needs the backend reachable and you signed in");
+            HelpLine(page, 620f, 4, Icon.Cloud, "Online co-op is not available in this build");
 
             BackButton("Back", page, "BACK", new Vector2(-760f, -424f),
                 new Vector2(240f, 92f), backScreen);
+            BackButton("Credits", page, "CREDITS", new Vector2(760f, -424f),
+                new Vector2(240f, 92f), "Credits");
+        }
+
+        /// <summary>
+        /// Licence and attribution page. CC BY 4.0 requires the Earth attribution to be
+        /// visible to players, not just recorded in a source file.
+        /// </summary>
+        public static void BuildCreditsScreen(Transform page, string backScreen)
+        {
+            EnsureSprites();
+            Frame(page.GetComponent<RectTransform>(), Accent2, 2f);
+
+            var heading = Label("Heading", page, "CREDITS", 54, Color.white);
+            Center(heading.rectTransform, new Vector2(0f, 410f));
+            heading.rectTransform.sizeDelta = new Vector2(1000f, 64f);
+
+            var body = Label("Body", page,
+                "NULL FRONTIER is an original project. Character and world identities are original.\n\n" +
+                "ENGINE\nUnity 6000.0.85f2 - Universal Render Pipeline 17.0.4\n\n" +
+                "ENVIRONMENT ART\nKenney - City Kit Roads 2.2 and City Kit Industrial 2.0\n" +
+                "CC0 1.0 Universal - kenney.nl\n\n" +
+                "CHARACTER ART\nQuaternius - Ultimate Animated Character Pack (2019)\n" +
+                "CC0 1.0 Universal - quaternius.com\n\n" +
+                "EARTH AND CLOUD MAPS\nEarth texture by Solar System Scope, CC BY 4.0\n" +
+                "www.solarsystemscope.com - built from NASA Blue Marble imagery\n\n" +
+                "AUDIO\nOriginal procedural audio synthesized at runtime.\n\n" +
+                "The full licence record ships in StreamingAssets/CREDITS.txt.",
+                21, Body, TextAnchor.UpperLeft);
+            Center(body.rectTransform, new Vector2(0f, -40f));
+            body.rectTransform.sizeDelta = new Vector2(1320f, 680f);
+
+            BackButton("Back", page, "BACK", new Vector2(0f, -430f),
+                new Vector2(320f, 80f), backScreen);
         }
 
         private static void HelpColumn(Transform page, float x, string title)
@@ -2418,23 +2452,38 @@ namespace NullFrontier.EditorTools
             return label;
         }
 
-        /// <summary>Co-op page: exists so the menu button leads somewhere honest.</summary>
+        /// <summary>
+        /// Co-op status page. There is no network transport in the client yet, so this
+        /// states that plainly instead of offering host/invite controls that cannot work.
+        /// </summary>
         public static void BuildMultiplayerScreen(Transform page, string backScreen)
         {
             EnsureSprites();
             Frame(page.GetComponent<RectTransform>(), Accent2, 2f);
 
-            var heading = Label("Heading", page, "COOPERATIVE", 54, Color.white);
-            Center(heading.rectTransform, new Vector2(0f, 180f));
+            var heading = Label("Heading", page, "CO-OP", 54, Color.white);
+            Center(heading.rectTransform, new Vector2(0f, 240f));
             heading.rectTransform.sizeDelta = new Vector2(1000f, 80f);
 
+            var status = Label("Status", page, "OFFLINE - NOT AVAILABLE IN THIS BUILD", 24,
+                Danger, TextAnchor.MiddleCenter);
+            Center(status.rectTransform, new Vector2(0f, 160f));
+            status.rectTransform.sizeDelta = new Vector2(1100f, 40f);
+
             var body = Label("Body", page,
-                "Co-op runs through the game backend: host it, sign in from the account " +
-                "screen, then invite from here.", 26, Body);
-            Center(body.rectTransform, new Vector2(0f, 20f));
+                "Online co-op needs a network transport, sessions and server-authoritative " +
+                "play. None of that is implemented yet, so this screen does not pretend to " +
+                "host, invite or matchmake.", 26, Body);
+            Center(body.rectTransform, new Vector2(0f, 40f));
             body.rectTransform.sizeDelta = new Vector2(1100f, 140f);
 
-            BackButton("Back", page, "BACK", new Vector2(0f, -200f),
+            var note = Label("Note", page,
+                "The campaign and all five operatives remain fully playable offline.",
+                22, Subtle, TextAnchor.MiddleCenter);
+            Center(note.rectTransform, new Vector2(0f, -90f));
+            note.rectTransform.sizeDelta = new Vector2(1100f, 40f);
+
+            BackButton("Back", page, "BACK", new Vector2(0f, -220f),
                 new Vector2(320f, 84f), backScreen);
         }
     }

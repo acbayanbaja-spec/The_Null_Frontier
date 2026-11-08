@@ -26,10 +26,24 @@ namespace NullFrontier.Combat
 
         protected float NextFireTime;
         private Vector2 _pendingRecoil;
+        private Coroutine _reloadRoutine;
 
         protected virtual void Awake()
         {
             if (definition != null) CurrentAmmo = definition.magazineSize;
+        }
+
+        protected virtual void OnDisable()
+        {
+            // Switching weapons deactivates this object, which kills the reload
+            // coroutine. Clear the flag so switching back cannot leave the weapon
+            // permanently unable to fire.
+            if (_reloadRoutine != null)
+            {
+                StopCoroutine(_reloadRoutine);
+                _reloadRoutine = null;
+            }
+            IsReloading = false;
         }
 
         public bool CanFire =>
@@ -41,12 +55,13 @@ namespace NullFrontier.Combat
         {
             if (definition == null || IsReloading || CurrentAmmo >= definition.magazineSize) return;
             IsReloading = true;
-            StartCoroutine(ReloadRoutine());
+            _reloadRoutine = StartCoroutine(ReloadRoutine());
         }
 
         protected virtual IEnumerator ReloadRoutine()
         {
             yield return new WaitForSeconds(definition.reloadTime);
+            _reloadRoutine = null;
             CurrentAmmo = definition.magazineSize;
             IsReloading = false;
             OnReloaded?.Invoke();
