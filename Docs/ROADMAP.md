@@ -19,7 +19,8 @@ any multiplayer marketing.
 - **2026-11-08, later pass** — Both scenes rebuilt and inspected in editor Play.
   Menu renders with full UI (12 active buttons, 10 persistent listeners; Continue
   and Co-op wired at runtime). VerticalCity renders with a real HUD
-  (JAHred Lv. 3, mission "Missing Players", 32/32 ammo, 6 hostiles). Player feet
+  (JAHred Lv. 3, mission "Missing Players", 32/32 ammo; hostile count 13 at
+  00:05 as spawns streamed in). Player feet
   land at Y≈0.31 on the Y=0 floor, body centre Y≈1.14; camera now pitches through
   a `CinemachineRotationComposer` aim stage and frames an over-the-shoulder shot
   with feet and shadow visible. Two play-mode teardown null references were fixed

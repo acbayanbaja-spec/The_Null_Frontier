@@ -121,7 +121,7 @@ Install Unity with the **Android Build Support** module (includes SDK/NDK).
 | Offline Roslyn compile gate (`Temp/nfcheck/check.sh`) | PASS — runtime + editor assemblies |
 | Scene rebuild (`SceneBuilder.BuildAll`) | PASS — MainMenu and VerticalCity written |
 | Main menu in Play mode (editor, Game view) | PASS — portal, textured Earth, character and full UI render; 12 active buttons, 10 persistent listeners; Continue/Co-op wired at runtime |
-| VerticalCity in Play mode | PASS — HUD shows real values (JAHred Lv. 3, "Missing Players", 32/32 ammo, 6 hostiles); player feet Y≈0.31, body centre Y≈1.14; camera pitches and frames feet + shadow |
+| VerticalCity in Play mode | PASS — HUD shows live values (JAHred Lv. 3, "Missing Players", 32/32 ammo; hostile count 13 at 00:05 as spawns streamed in). Player feet Y≈0.31, body centre Y≈1.14; camera pitches and frames feet + shadow |
 | Play-mode console | PASS — zero errors after teardown guards in `PlayerCameraController` and `DesktopInputProvider` |
 | Save/continue round trip, reload/switch/fire, credits page | NOT TESTED (no scripted input driver yet) |
 | Android APK build from current commit | NOT BUILT this pass |

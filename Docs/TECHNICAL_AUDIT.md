@@ -45,7 +45,7 @@ under `Docs/Captures/`:
 | `SceneBuilder.BuildAll()` | Returns success; both scenes save |
 | Menu Play | 12 buttons present, active, interactable; 10 with persistent listeners, Continue/Co-op wired at runtime |
 | Menu capture | Full UI over the live night stage; portrait, JAHred Lv. 3, six menu entries, logo, planet |
-| City Play | Real HUD values (JAHred Lv. 3, mission "Missing Players", 32/32 ammo, 6 hostiles), enemy visible, player casts a shadow |
+| City Play | Live HUD values (JAHred Lv. 3, mission "Missing Players", 32/32 ammo; hostile count 13 at 00:05 as spawns streamed in), enemy visible, player casts a shadow |
 | Player placement | Visual feet at world Y≈0.31 on a Y=0 floor; body bounds centred at Y≈1.14 |
 | Third-person camera | Rotation composer added; lens now pitches and frames the whole operative |
 | Console during Play | No errors or exceptions after the teardown null-reference guards |
