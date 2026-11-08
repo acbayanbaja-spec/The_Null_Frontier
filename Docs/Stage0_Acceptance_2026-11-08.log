@@ -92,3 +92,15 @@
 20:22:18 SUMMARY pass=51 fail=0
 20:22:18 android device: NOT TESTED
 20:22:18 === Stage 0 run complete ===
+
+=== ANDROID BUILD (Stage 0 item 5) ===
+20:26:48 BuildApk started from the editor menu method AndroidBuildSettings.BuildApk (Null Frontier/Build/Android APK)
+20:31:26 Build Finished, Result: Success. Builds/NullFrontier.apk, 00:04:36, 37,030,482 bytes
+20:31:26 aapt2 badging: package com.nullfrontier.game, versionCode 1, minSdk 26, targetSdk 36, label "NULL FRONTIER"
+20:31:26 APK abis: arm64-v8a only (libil2cpp.so 55,503,840 B); assets/CREDITS.txt shipped; 572 entries
+20:31:26 SHA-256 B592E1B742427C8231822DCBA57F6E4027C07AAD8EDD1A8AFF0C533B58DD6555
+20:31:26 Build validation: StreamingAssets/CREDITS.txt present, no localhost:3000 and no cleartext apiBaseUrl in either scene
+20:31:26 Touch path verified by inspection only: VerticalCity.unity binds all 11 MobileInputProvider fields (joystick + 10 TouchButtons),
+          EventSystem + GraphicRaycaster present, and every mapped flag is consumed (Fire/FireHeld -> PlayerCombat, Switch -> WeaponLoadout,
+          Reload -> PlayerCombat.Reload, Jump/Dodge/Interact -> PlayerController, Ability -> AbilityController, Sprint/Crouch/Aim -> PlayerController).
+20:31:26 android device: NOT TESTED - adb devices returned no attached hardware, so no install, touch input, fps, memory or temperature reading exists.
