@@ -266,7 +266,6 @@ namespace NullFrontier.EditorTools
             baked.SetFloat("_SrcBlend", 2f);
             baked.SetFloat("_DstBlend", 7f);
             baked.SetFloat("_ZWrite", 1f);
-            baked.SetFloat("_BaseColorAddSubDiff", 0f);
             baked.SetColor("_EmissionColor", accent * (flesh ? 0.03f : 0.09f));
             baked.EnableKeyword("_EMISSION");
             baked.DisableKeyword("_COLORADDSUBDIFF_ON");

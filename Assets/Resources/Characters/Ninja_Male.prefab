@@ -88,7 +88,7 @@ SkinnedMeshRenderer:
   m_Bones:
   - {fileID: 8398254515623230309}
   - {fileID: 3563559622136992995}
-  - {fileID: 2533362158175840152}
+  - {fileID: 8674077338005066463}
   - {fileID: 1305959700495645263}
   - {fileID: 4497345750123797345}
   - {fileID: 5932170947638817268}
@@ -272,7 +272,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 4497345750123797345}
-  m_Father: {fileID: 2533362158175840152}
+  m_Father: {fileID: 8674077338005066463}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2460936715899688172
 GameObject:
@@ -336,7 +336,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 7842103940422839254}
-  m_Father: {fileID: 2533362158175840152}
+  m_Father: {fileID: 8674077338005066463}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &3256123317443553882
 GameObject:
@@ -432,7 +432,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 6208764143783732802}
-  m_Father: {fileID: 2533362158175840152}
+  m_Father: {fileID: 8674077338005066463}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &3572127850135884907
 GameObject:
@@ -873,7 +873,7 @@ Transform:
   m_LocalScale: {x: 1, y: 0.99999994, z: 0.99999994}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 2533362158175840152}
+  - {fileID: 8674077338005066463}
   - {fileID: 3563559622136992995}
   - {fileID: 6838194823545987551}
   - {fileID: 1891397860136460031}
@@ -970,40 +970,6 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
---- !u!1 &7525663526530855382
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2533362158175840152}
-  m_Layer: 0
-  m_Name: Body
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &2533362158175840152
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7525663526530855382}
-  serializedVersion: 2
-  m_LocalRotation: {x: -3.552703e-15, y: -0.00000011920933, z: -4.9431915e-30, w: 1}
-  m_LocalPosition: {x: -0.0000215305, y: 0.009306885, z: 0.00019310653}
-  m_LocalScale: {x: 1, y: 1.0000001, z: 1.0000001}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 1305959700495645263}
-  - {fileID: 536666889322274053}
-  - {fileID: 8436992111180626024}
-  m_Father: {fileID: 8398254515623230309}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7532483710351377273
 GameObject:
   m_ObjectHideFlags: 0
@@ -1067,6 +1033,40 @@ Transform:
   m_Children:
   - {fileID: 8398254515623230309}
   m_Father: {fileID: 320857431765754677}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &7932674402540028082
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8674077338005066463}
+  m_Layer: 0
+  m_Name: Body
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8674077338005066463
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7932674402540028082}
+  serializedVersion: 2
+  m_LocalRotation: {x: -3.552703e-15, y: -0.00000011920933, z: -4.9431915e-30, w: 1}
+  m_LocalPosition: {x: -0.0000215305, y: 0.009306885, z: 0.00019310653}
+  m_LocalScale: {x: 1, y: 1.0000001, z: 1.0000001}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1305959700495645263}
+  - {fileID: 536666889322274053}
+  - {fileID: 8436992111180626024}
+  m_Father: {fileID: 8398254515623230309}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &8062609559680927870
 GameObject:

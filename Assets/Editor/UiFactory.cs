@@ -1440,7 +1440,7 @@ namespace NullFrontier.EditorTools
             out Text level, out Slider xp, bool floating)
         {
             Transform body;
-            float height = floating ? 112f : 128f;
+            float height = floating ? 88f : 128f;
 
             if (floating)
             {
@@ -1464,38 +1464,38 @@ namespace NullFrontier.EditorTools
                 var bloom = Solid("Bloom", body, new Color(Accent.r, Accent.g, Accent.b, 0.16f),
                     GlowSprite);
                 Center(bloom.rectTransform, new Vector2(-150f, 0f));
-                bloom.rectTransform.sizeDelta = new Vector2(260f, 260f);
+                bloom.rectTransform.sizeDelta = new Vector2(220f, 220f);
             }
 
             var ring = Solid("Bezel", body,
                 new Color(Accent.r, Accent.g, Accent.b, 0.9f), RingSprite);
             Center(ring.rectTransform, new Vector2(-150f, 0f));
-            ring.rectTransform.sizeDelta = new Vector2(floating ? 104f : 114f, floating ? 104f : 114f);
+            ring.rectTransform.sizeDelta = new Vector2(floating ? 92f : 114f, floating ? 92f : 114f);
 
             var window = Solid("Window", body, new Color(0.12f, 0.16f, 0.22f, 1f), CircleSprite);
             Center(window.rectTransform, new Vector2(-150f, 0f));
-            window.rectTransform.sizeDelta = new Vector2(floating ? 90f : 98f, floating ? 90f : 98f);
+            window.rectTransform.sizeDelta = new Vector2(floating ? 78f : 98f, floating ? 78f : 98f);
             window.gameObject.AddComponent<Mask>().showMaskGraphic = false;
 
             var face = Solid("Portrait", window.transform, Color.white);
             Stretch(face.rectTransform, 0f);
 
-            var name = Label("Name", body, "OPERATIVE", floating ? 30 : 26, Color.white,
+            var name = Label("Name", body, "OPERATIVE", floating ? 28 : 26, Color.white,
                 TextAnchor.MiddleLeft);
-            TopLeft(name.rectTransform, new Vector2(180f, floating ? -18f : -22f));
-            name.rectTransform.sizeDelta = new Vector2(234f, 38f);
+            TopLeft(name.rectTransform, new Vector2(180f, floating ? -8f : -22f));
+            name.rectTransform.sizeDelta = new Vector2(234f, floating ? 34f : 38f);
             if (floating) AddShadow(name, new Color(0f, 0f, 0f, 0.85f), new Vector2(2f, -2f));
 
             level = Label("Level", body, "Lv. 1", 20, Stamina, TextAnchor.MiddleLeft);
-            TopLeft(level.rectTransform, new Vector2(180f, floating ? -56f : -58f));
+            TopLeft(level.rectTransform, new Vector2(180f, floating ? -42f : -58f));
             level.rectTransform.sizeDelta = new Vector2(234f, 26f);
             if (floating) AddShadow(level, new Color(0f, 0f, 0f, 0.85f), new Vector2(2f, -2f));
 
             xp = Bar("Xp", body, Vector2.zero, Vector2.zero, Accent, false, 0f);
             var xpRt = xp.transform as RectTransform;
             xpRt.anchorMin = xpRt.anchorMax = xpRt.pivot = new Vector2(0f, 1f);
-            xpRt.anchoredPosition = new Vector2(180f, floating ? -82f : -90f);
-            xpRt.sizeDelta = new Vector2(234f, floating ? 10f : 12f);
+            xpRt.anchoredPosition = new Vector2(180f, floating ? -66f : -90f);
+            xpRt.sizeDelta = new Vector2(234f, floating ? 9f : 12f);
 
             var card = body.gameObject.AddComponent<PlayerCardController>();
             SetField(card, "portrait", face);
@@ -1594,8 +1594,11 @@ namespace NullFrontier.EditorTools
             // each caption is, which is what keeps a column of eight from turning into a
             // stack of bricks.
             var column = Root("Column", backdrop.transform);
-            Center(column, new Vector2(-600f, 26f));
-            column.sizeDelta = new Vector2(470f, 738f);
+            // Card and menu share one left margin (44 px, the same as the wordmark's
+            // right margin) and one vertical flow: CONTINUE can no longer land under
+            // the operative name at any aspect ratio.
+            Center(column, new Vector2(-681f, 25f));
+            column.sizeDelta = new Vector2(470f, 854f);
             var layout = column.gameObject.AddComponent<VerticalLayoutGroup>();
             layout.spacing = 12f;
             layout.childAlignment = TextAnchor.UpperLeft;
@@ -1603,6 +1606,11 @@ namespace NullFrontier.EditorTools
             layout.childControlHeight = false;
             layout.childForceExpandWidth = false;
             layout.childForceExpandHeight = false;
+
+            // The operative is the column's header, not an absolute overlay: the layout
+            // group reserves its 88 px and places CONTINUE underneath.
+            var operative = PlayerCard(column, Vector2.zero, out _, out _, true);
+            ((RectTransform)operative.transform).anchoredPosition = Vector2.zero;
 
             // The primary action is the loudest thing on the page: same plate as the rest,
             // with a bloom behind it so the eye starts where the game wants it to.
@@ -1646,15 +1654,10 @@ namespace NullFrontier.EditorTools
             Bind(MenuButton("Quit", column, "QUIT", new Vector2(470f, 78f), Danger, false,
                 Icon.Power), new UnityAction(controller.QuitGame));
 
-            // The corner belongs to the operative, not the brand: the card floats straight
-            // on the stage so the plinth shot stays the picture.
-            //
             // Nothing may sit closer than 88 px to the top or bottom of the 1080 reference:
             // with a half-way match on a 21:9 phone the canvas is 1080 tall inside a 926 px
             // viewport, so the outer 77 px of it is simply off the screen. At 28 px the
             // level card and the hex dock were cut in half on any modern wide phone.
-            PlayerCard(backdrop.transform, new Vector2(44f, -88f), out _, out _, true);
-
             var ticks = Solid("Ticks", backdrop.transform,
                 new Color(Accent.r, Accent.g, Accent.b, 0.85f), TicksSprite);
             BottomLeft(ticks.rectTransform, new Vector2(44f, 88f));

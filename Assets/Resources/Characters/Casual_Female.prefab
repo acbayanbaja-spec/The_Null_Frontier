@@ -434,7 +434,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 546225855615074562}
-  m_Father: {fileID: 2776897393070934701}
+  m_Father: {fileID: 8280844876574353995}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &3448890409058018286
 GameObject:
@@ -497,7 +497,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 6954806269255184522}
-  m_Father: {fileID: 2776897393070934701}
+  m_Father: {fileID: 8280844876574353995}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &3933498608031544774
 GameObject:
@@ -563,40 +563,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2395499155791938821}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &4759680554078175477
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2776897393070934701}
-  m_Layer: 0
-  m_Name: Body
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &2776897393070934701
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4759680554078175477}
-  serializedVersion: 2
-  m_LocalRotation: {x: -3.552703e-15, y: -0.00000011920933, z: -4.9431915e-30, w: 1}
-  m_LocalPosition: {x: -0.0000215305, y: 0.009306885, z: 0.00019310653}
-  m_LocalScale: {x: 1, y: 1.0000001, z: 1.0000001}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 7191933738211460843}
-  - {fileID: 6714671304651321916}
-  - {fileID: 6470336819689972004}
-  m_Father: {fileID: 4375048133380280524}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &5308212179613353822
 GameObject:
@@ -821,6 +787,40 @@ Transform:
   - {fileID: 1163576073955229105}
   m_Father: {fileID: 4375048133380280524}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &6662128988131684488
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8280844876574353995}
+  m_Layer: 0
+  m_Name: Body
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8280844876574353995
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6662128988131684488}
+  serializedVersion: 2
+  m_LocalRotation: {x: -3.552703e-15, y: -0.00000011920933, z: -4.9431915e-30, w: 1}
+  m_LocalPosition: {x: -0.0000215305, y: 0.009306885, z: 0.00019310653}
+  m_LocalScale: {x: 1, y: 1.0000001, z: 1.0000001}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 7191933738211460843}
+  - {fileID: 6714671304651321916}
+  - {fileID: 6470336819689972004}
+  m_Father: {fileID: 4375048133380280524}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7281708798783635106
 GameObject:
   m_ObjectHideFlags: 0
@@ -973,7 +973,7 @@ SkinnedMeshRenderer:
   m_Bones:
   - {fileID: 4375048133380280524}
   - {fileID: 8541201784913474635}
-  - {fileID: 2776897393070934701}
+  - {fileID: 8280844876574353995}
   - {fileID: 7191933738211460843}
   - {fileID: 546225855615074562}
   - {fileID: 1994294156111654814}
@@ -1061,7 +1061,7 @@ Transform:
   m_LocalScale: {x: 1, y: 0.99999994, z: 0.99999994}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 2776897393070934701}
+  - {fileID: 8280844876574353995}
   - {fileID: 8541201784913474635}
   - {fileID: 8531616670680040240}
   - {fileID: 2553350309006323834}
@@ -1225,7 +1225,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 6750858044575796815}
-  m_Father: {fileID: 2776897393070934701}
+  m_Father: {fileID: 8280844876574353995}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &9076994885066773279
 GameObject:
