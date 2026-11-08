@@ -1,0 +1,31 @@
+20:42:50 === mobile input run start ===
+20:42:50 playmode ExitingEditMode phase=1 step=0
+20:42:56 playmode EnteredPlayMode phase=1 step=0
+20:42:56 virtual Touchscreen added: True; desktop provider enabled=False
+20:42:56 provider injected into 5 consumers; MobileInputProvider (player) / MobileInputProvider (camera)
+20:42:57 CHECK PASS deck.buttons :: 10 active TouchButtons
+20:42:57 CHECK PASS deck.joystick :: VirtualJoystick present
+20:42:57 CHECK PASS deck.provider :: MobileInputProvider resolved
+20:42:57 captured C:\Users\angel\AppData\Local\Temp\nf_touch_deck.png
+20:42:57 touch down on FIRE at (1140.60, 207.81)
+20:42:57 CHECK PASS touch.fire :: ammo 32 -> 26 while the FIRE key was held
+20:42:58 touch down on SWAP at (1189.91, 306.44)
+20:42:58 CHECK PASS touch.switch :: index 1 -> 3
+20:42:59 CHECK PASS touch.fireAfterSwitch :: switched weapon ammo 6 -> 5
+20:42:59 CHECK PASS touch.fireNewDefinition :: Breach Scattergun
+20:42:59 touch down on RELOAD at (1049.02, 412.10) (ammo 5)
+20:43:02 CHECK PASS touch.reload :: ammo 5 -> 6/6 after the RELOAD key
+20:43:03 CHECK PASS touch.jump :: y 0.98 -> 1.99, grounded=False
+20:43:03 touch down inside the move zone at (245.34, 226.50)
+20:43:04 CHECK PASS touch.joystickHeld :: IsHeld=True, value=(0.00, 1.00)
+20:43:04 CHECK PASS touch.joystickMove :: walked 2.83 m with the left thumbstick
+20:43:04 CHECK PASS touch.joystickRelease :: IsHeld=False, value=(0.00, 0.00)
+20:43:04 look touch down at (981.36, 468.10) (screen 1363x755)
+20:43:05 CHECK PASS touch.look :: yaw 0.0 -> 48.0 from a 120px drag on the right half
+20:43:05 captured C:\Users\angel\AppData\Local\Temp\nf_touch_final.png
+20:43:05 playmode ExitingPlayMode phase=1 step=99
+20:43:06 playmode EnteredEditMode phase=1 step=99
+20:43:06 SUMMARY pass=13 fail=0
+20:43:06 console errors during run: none
+20:43:06 android device: NOT TESTED - virtual Touchscreen device in the editor, no hardware attached
+20:43:06 === touch run complete ===
